@@ -1,21 +1,27 @@
+"""Database models and connection management."""
+
+import os
+from collections.abc import Generator
+
 from sqlalchemy import (
-    create_engine,
     Column,
+    DateTime,
+    Float,
+    ForeignKey,
     Integer,
     String,
-    Float,
-    DateTime,
-    ForeignKey,
     Text,
+    create_engine,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-import os
+from sqlalchemy.orm import Session, relationship, sessionmaker
 
 Base = declarative_base()
 
 
-class Movie(Base):
+class Movie(Base):  # type: ignore[misc, valid-type]
+    """Movie model representing a Douban movie or TV show."""
+
     __tablename__ = "movies"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -30,40 +36,38 @@ class Movie(Base):
     douban_url = Column(Text, nullable=False)
     created_at = Column(DateTime, nullable=True)
 
-    genres = relationship(
-        "MovieGenre", back_populates="movie", cascade="all, delete-orphan"
-    )
+    genres = relationship("MovieGenre", back_populates="movie", cascade="all, delete-orphan")  # type: ignore[var-annotated]
 
 
-class MovieGenre(Base):
+class MovieGenre(Base):  # type: ignore[misc, valid-type]
+    """Genre association model for movies."""
+
     __tablename__ = "movie_genres"
 
-    movie_id = Column(
-        Integer, ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True
-    )
+    movie_id = Column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True)
     genre = Column(String(32), primary_key=True, index=True)
 
-    movie = relationship("Movie", back_populates="genres")
+    movie = relationship("Movie", back_populates="genres")  # type: ignore[var-annotated]
 
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/movies.db")
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}
-    if DATABASE_URL.startswith("sqlite")
-    else {},
+    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
     pool_pre_ping=True,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
+def init_db() -> None:
+    """Initialize database tables."""
+    Base.metadata.create_all(bind=engine)  # type: ignore[attr-defined]
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
+    """Generate database session for dependency injection."""
     db = SessionLocal()
     try:
         yield db

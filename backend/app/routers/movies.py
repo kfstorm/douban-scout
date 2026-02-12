@@ -1,37 +1,34 @@
+"""Movie API endpoints."""
+
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
-from typing import List, Optional, Literal
 from sqlalchemy.orm import Session
+
 from app.database import get_db
+from app.schemas import GenreCount, MoviesListResponse, StatsResponse
 from app.services.movie_service import movie_service
-from app.schemas import MoviesListResponse, GenreCount, StatsResponse
 
 router = APIRouter(prefix="/movies", tags=["movies"])
 
 
 @router.get("", response_model=MoviesListResponse)
-def get_movies(
-    cursor: Optional[str] = Query(None, description="Cursor for pagination"),
+def get_movies(  # noqa: PLR0913
+    cursor: str | None = Query(None, description="Cursor for pagination"),
     limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
-    type: Optional[Literal["movie", "tv"]] = Query(None, description="Filter by type"),
-    min_rating: Optional[float] = Query(
-        None, ge=0, le=10, description="Minimum rating"
-    ),
-    max_rating: Optional[float] = Query(
-        None, ge=0, le=10, description="Maximum rating"
-    ),
-    min_rating_count: Optional[int] = Query(
-        None, ge=0, description="Minimum rating count"
-    ),
-    genres: Optional[str] = Query(
-        None, description="Comma-separated genres (AND logic)"
-    ),
-    search: Optional[str] = Query(None, description="Search in title"),
+    type: Literal["movie", "tv"] | None = Query(None, description="Filter by type"),
+    min_rating: float | None = Query(None, ge=0, le=10, description="Minimum rating"),
+    max_rating: float | None = Query(None, ge=0, le=10, description="Maximum rating"),
+    min_rating_count: int | None = Query(None, ge=0, description="Minimum rating count"),
+    genres: str | None = Query(None, description="Comma-separated genres (AND logic)"),
+    search: str | None = Query(None, description="Search in title"),
     sort_by: Literal["rating", "rating_count", "year", "title"] = Query(
         "rating", description="Sort field"
     ),
     sort_order: Literal["asc", "desc"] = Query("desc", description="Sort order"),
-    db: Session = Depends(get_db),
-):
+    db: Session = Depends(get_db),  # noqa: B008
+) -> MoviesListResponse:
+    """Get movies with filtering and pagination."""
     genre_list = genres.split(",") if genres else None
 
     return movie_service.get_movies(
@@ -49,14 +46,18 @@ def get_movies(
     )
 
 
-@router.get("/genres", response_model=List[GenreCount])
+@router.get("/genres", response_model=list[GenreCount])
 def get_genres(
-    type: Optional[Literal["movie", "tv"]] = Query(None, description="Filter by type"),
-    db: Session = Depends(get_db),
-):
+    type: Literal["movie", "tv"] | None = Query(None, description="Filter by type"),
+    db: Session = Depends(get_db),  # noqa: B008
+) -> list[GenreCount]:
+    """Get all genres with counts."""
     return movie_service.get_genres(db, type)
 
 
 @router.get("/stats", response_model=StatsResponse)
-def get_stats(db: Session = Depends(get_db)):
+def get_stats(
+    db: Session = Depends(get_db),  # noqa: B008
+) -> StatsResponse:
+    """Get database statistics."""
     return movie_service.get_stats(db)

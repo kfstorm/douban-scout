@@ -1,51 +1,68 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
+"""Pydantic schemas for API request/response models."""
+
 from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel
 
 
 class MovieBase(BaseModel):
+    """Base movie schema with common fields."""
+
     douban_id: str
-    imdb_id: Optional[str] = None
+    imdb_id: str | None = None
     title: str
-    year: Optional[int] = None
-    rating: Optional[float] = None
+    year: int | None = None
+    rating: float | None = None
     rating_count: int = 0
     type: Literal["movie", "tv"]
-    poster_url: Optional[str] = None
+    poster_url: str | None = None
     douban_url: str
-    genres: List[str] = []
+    genres: list[str] = []
 
 
 class MovieResponse(MovieBase):
+    """Movie response schema with additional fields."""
+
     id: int
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
 
     class Config:
+        """Pydantic configuration."""
+
         from_attributes = True
 
 
 class MoviesListResponse(BaseModel):
-    items: List[MovieResponse]
-    next_cursor: Optional[str] = None
+    """Response schema for movie list endpoint."""
+
+    items: list[MovieResponse]
+    next_cursor: str | None = None
     total: int
 
 
 class GenreCount(BaseModel):
+    """Genre count schema."""
+
     genre: str
     count: int
 
 
 class ImportStatus(BaseModel):
+    """Import process status schema."""
+
     status: Literal["idle", "running", "completed", "failed"]
     processed: int = 0
     total: int = 0
     percentage: float = 0.0
-    message: Optional[str] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    message: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
 
 class StatsResponse(BaseModel):
+    """Database statistics response schema."""
+
     total_movies: int
     total_tv: int
     avg_rating: float
