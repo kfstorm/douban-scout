@@ -1,0 +1,34 @@
+# Production Docker Compose
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: douban-backend
+    volumes:
+      - /opt/douban-movie-explorer/data:/app/data
+      - /opt/douban-movie-explorer/import:/app/import:ro
+    environment:
+      - DATABASE_URL=sqlite:///app/data/movies.db
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=/api
+    container_name: douban-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  default:
+    name: douban-network
