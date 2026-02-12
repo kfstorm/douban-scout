@@ -9,7 +9,8 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from app.database import Movie, MovieGenre, engine
+from app import database as app_db
+from app.database import Movie, MovieGenre
 from app.schemas import ImportStatus
 
 # Configure logger
@@ -82,7 +83,7 @@ class ImportService:
 
             # Clear existing data
             logger.info("Clearing existing data...")
-            with Session(engine) as db:
+            with Session(app_db.engine) as db:
                 deleted_genres = db.query(MovieGenre).delete()
                 deleted_movies = db.query(Movie).delete()
                 db.commit()
@@ -94,7 +95,6 @@ class ImportService:
             batch_size = 1000
             processed = 0
             batch: list[dict] = []
-            genre_batch: list[tuple[int, str]] = []
             error_count = 0
 
             # Valid genres
@@ -200,10 +200,9 @@ class ImportService:
                     batch.append(movie)
 
                     if len(batch) >= batch_size:
-                        self._insert_batch(batch, genre_batch)
+                        self._insert_batch(batch)
                         processed += len(batch)
                         batch = []
-                        genre_batch = []
 
                         with self._lock:
                             self._status.processed = processed
@@ -226,7 +225,7 @@ class ImportService:
             # Insert remaining
             if batch:
                 logger.info(f"Inserting final batch of {len(batch)} records...")
-                self._insert_batch(batch, genre_batch)
+                self._insert_batch(batch)
                 processed += len(batch)
 
             source_conn.close()
@@ -248,10 +247,10 @@ class ImportService:
                 self._status.message = str(e)
                 self._status.completed_at = datetime.now()
 
-    def _insert_batch(self, movies: list[dict], genre_batch: list[tuple[int, str]]) -> None:
+    def _insert_batch(self, movies: list[dict]) -> None:
         """Insert a batch of movies and their genres."""
         try:
-            with Session(engine) as db:
+            with Session(app_db.engine) as db:
                 for movie_data in movies:
                     genres = movie_data.pop("genres", [])
 
@@ -259,14 +258,8 @@ class ImportService:
                     db.add(movie)
                     db.flush()
 
-                    genre_batch.extend((movie.id, genre) for genre in genres)  # type: ignore[misc]
-
-                # Bulk insert genres
-                if genre_batch:
-                    db.execute(
-                        MovieGenre.__table__.insert(),
-                        [{"movie_id": m_id, "genre": g} for m_id, g in genre_batch],
-                    )
+                    for genre in genres:
+                        db.add(MovieGenre(movie_id=movie.id, genre=genre))
 
                 db.commit()
                 logger.debug(f"Inserted batch of {len(movies)} movies")
