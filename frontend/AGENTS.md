@@ -138,6 +138,18 @@ frontend/
 └── tailwind.config.js
 ```
 
+## UX Wording Guidelines
+
+- **No English text**: All user-facing text must be in Chinese
+- **Use inclusive terms**: The app covers both movies and TV shows
+  - Use "作品" or "影视" instead of "电影" 
+  - Use "电视节目" instead of "电视剧"
+- Examples:
+  - ✓ 搜索作品标题... / 共找到 100 部作品
+  - ✗ 搜索电影标题... / 共找到 100 部电影
+  - ✓ 类型: 全部 / 影视 / 电视节目
+  - ✗ 类型: 全部 / 电影 / 电视剧
+
 ## Key Patterns
 
 ### State Management
