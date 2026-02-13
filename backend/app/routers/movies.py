@@ -1,5 +1,6 @@
 """Movie API endpoints."""
 
+import re
 from typing import Literal
 
 import httpx
@@ -92,17 +93,48 @@ async def get_poster(
 
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(movie.poster_url, headers=headers, timeout=10.0)
-            response.raise_for_status()
+            # Try original URL first
+            urls_to_try = [movie.poster_url]
 
-            content_type = response.headers.get("content-type", "image/jpeg")
-            return StreamingResponse(
-                response.aiter_bytes(),
-                media_type=content_type,
-                headers={
-                    "Cache-Control": "public, max-age=86400",
-                },
-            )
+            # If it's an img[0-9]+.doubanio.com URL, add fallbacks
+            match = re.search(r"img([0-9]+)\.doubanio\.com", movie.poster_url)
+            if match:
+                original_host = match.group(0)
+                # Douban uses img1, img2, and img3 as reliable mirrors.
+                # Other numbers (like img9) often serve JS challenges.
+                for i in ["1", "2", "3"]:
+                    new_host = f"img{i}.doubanio.com"
+                    if new_host != original_host:
+                        fallback_url = movie.poster_url.replace(original_host, new_host)
+                        if fallback_url not in urls_to_try:
+                            urls_to_try.append(fallback_url)
+
+            last_exception = None
+            for url in urls_to_try:
+                try:
+                    response = await client.get(url, headers=headers, timeout=10.0)
+                    response.raise_for_status()
+
+                    content_type = response.headers.get("content-type", "")
+                    # If it's not an image (e.g., a JS challenge script), try the next URL
+                    if not content_type.startswith("image/"):
+                        continue
+
+                    return StreamingResponse(
+                        response.aiter_bytes(),
+                        media_type=content_type,
+                        headers={
+                            "Cache-Control": "public, max-age=86400",
+                        },
+                    )
+                except httpx.HTTPError as e:
+                    last_exception = e
+                    continue
+
+            if last_exception:
+                raise last_exception
+            raise HTTPException(status_code=502, detail="Failed to fetch a valid poster image")
+
     except httpx.HTTPError as e:
         raise HTTPException(status_code=502, detail=f"Failed to fetch poster: {e}") from e
     except Exception as e:
