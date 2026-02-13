@@ -139,7 +139,6 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
             <option value="rating">评分</option>
             <option value="rating_count">评分人数</option>
             <option value="year">年份</option>
-            <option value="title">标题</option>
           </select>
           <button
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}

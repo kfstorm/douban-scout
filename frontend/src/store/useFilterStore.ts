@@ -8,7 +8,7 @@ export interface FilterState {
   minRatingCount: number;
   selectedGenres: string[];
   searchQuery: string;
-  sortBy: 'rating' | 'rating_count' | 'year' | 'title';
+  sortBy: 'rating' | 'rating_count' | 'year';
   sortOrder: 'asc' | 'desc';
   
   // Actions
@@ -19,7 +19,7 @@ export interface FilterState {
   toggleGenre: (genre: string) => void;
   clearGenres: () => void;
   setSearchQuery: (query: string) => void;
-  setSortBy: (sortBy: 'rating' | 'rating_count' | 'year' | 'title') => void;
+  setSortBy: (sortBy: 'rating' | 'rating_count' | 'year') => void;
   setSortOrder: (order: 'asc' | 'desc') => void;
   resetFilters: () => void;
 }

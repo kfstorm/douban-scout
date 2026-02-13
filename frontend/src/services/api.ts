@@ -19,7 +19,7 @@ export interface MoviesParams {
   min_rating_count?: number;
   genres?: string[];
   search?: string;
-  sort_by?: 'rating' | 'rating_count' | 'year' | 'title';
+  sort_by?: 'rating' | 'rating_count' | 'year';
   sort_order?: 'asc' | 'desc';
 }
 

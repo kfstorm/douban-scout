@@ -24,9 +24,7 @@ def get_movies(  # noqa: PLR0913
     min_rating_count: int | None = Query(None, ge=0, description="Minimum rating count"),
     genres: str | None = Query(None, description="Comma-separated genres (AND logic)"),
     search: str | None = Query(None, description="Search in title"),
-    sort_by: Literal["rating", "rating_count", "year", "title"] = Query(
-        "rating", description="Sort field"
-    ),
+    sort_by: Literal["rating", "rating_count", "year"] = Query("rating", description="Sort field"),
     sort_order: Literal["asc", "desc"] = Query("desc", description="Sort order"),
     db: Session = Depends(get_db),  # noqa: B008
 ) -> MoviesListResponse:
