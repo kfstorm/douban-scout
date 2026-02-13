@@ -3,6 +3,7 @@
 import base64
 import json
 import logging
+
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
@@ -16,7 +17,7 @@ class MovieService:
     """Service for movie-related operations."""
 
     @staticmethod
-    def get_movies(  # noqa: PLR0912, PLR0913
+    def get_movies(  # noqa: PLR0912, PLR0913, PLR0915
         db: Session,
         cursor: str | None = None,
         limit: int = 20,
@@ -37,10 +38,25 @@ class MovieService:
         if type:
             query = query.filter(Movie.type == type)
 
-        if min_rating is not None:
-            query = query.filter(Movie.rating >= min_rating)
-
-        if max_rating is not None:
+        # Rating filters
+        # When min_rating is 0, include NULL ratings (unrated items)
+        # When min_rating > 0, exclude NULL ratings
+        if min_rating is not None and min_rating > 0:
+            query = query.filter(Movie.rating.isnot(None))
+            if max_rating is not None:
+                query = query.filter(Movie.rating.between(min_rating, max_rating))
+            else:
+                query = query.filter(Movie.rating >= min_rating)
+        elif min_rating is not None and min_rating == 0:
+            # Include rated items in range AND unrated (NULL) items
+            if max_rating is not None:
+                query = query.filter(
+                    ((Movie.rating >= 0) & (Movie.rating <= max_rating)) | (Movie.rating.is_(None))
+                )
+            # If no max_rating, no filter needed since all ratings >= 0
+        elif max_rating is not None:
+            # Only max_rating set, exclude NULL
+            query = query.filter(Movie.rating.isnot(None))
             query = query.filter(Movie.rating <= max_rating)
 
         if min_rating_count is not None:

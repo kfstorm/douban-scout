@@ -36,8 +36,8 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies")
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 5
-        assert data["total"] == 5
+        assert len(data["items"]) == 6
+        assert data["total"] == 6
 
     def test_get_movies_limit(self, client: TestClient, sample_movies: list):
         """Test movies limit parameter."""
@@ -46,7 +46,7 @@ class TestMoviesEndpoint:
         data = response.json()
         assert len(data["items"]) == 2
         assert data["next_cursor"] is not None
-        assert data["total"] == 5
+        assert data["total"] == 6
 
     def test_get_movies_limit_max_validation(self, client: TestClient):
         """Test limit cannot exceed 100."""
@@ -63,7 +63,8 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies?type=movie")
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 3
+        # 4 movies: Drama, Comedy, Action, Unrated
+        assert len(data["items"]) == 4
         assert all(m["type"] == "movie" for m in data["items"])
 
     def test_get_movies_filter_by_tv(self, client: TestClient, sample_movies: list):
@@ -99,6 +100,79 @@ class TestMoviesEndpoint:
         for m in data["items"]:
             assert 7.0 <= m["rating"] <= 8.5
 
+    def test_get_movies_filter_min_rating_zero_includes_unrated(
+        self, client: TestClient, sample_movies: list
+    ):
+        """Test that min_rating=0 includes unrated (NULL) movies."""
+        response = client.get("/api/movies?min_rating=0&max_rating=10")
+        assert response.status_code == 200
+        data = response.json()
+        # Should include all 6 movies: 5 rated + 1 unrated
+        assert len(data["items"]) == 6
+        # Verify unrated movie is included
+        unrated = [m for m in data["items"] if m["rating"] is None]
+        assert len(unrated) == 1
+        assert unrated[0]["title"] == "Unrated Movie"
+
+    def test_get_movies_filter_min_rating_zero_max_rating_excludes_high_ratings(
+        self, client: TestClient, sample_movies: list
+    ):
+        """Test that min_rating=0 with max_rating excludes high-rated movies but includes unrated."""
+        response = client.get("/api/movies?min_rating=0&max_rating=8.0")
+        assert response.status_code == 200
+        data = response.json()
+        # Should include: rated <= 8.0 (Drama 8.0, Comedy 7.0, TV Show Two 7.5) + unrated
+        assert len(data["items"]) == 4
+        # Verify unrated movie is included
+        unrated = [m for m in data["items"] if m["rating"] is None]
+        assert len(unrated) == 1
+        # Verify high-rated movies are excluded
+        high_rated = [m for m in data["items"] if m["rating"] is not None and m["rating"] > 8.0]
+        assert len(high_rated) == 0
+
+    def test_get_movies_filter_min_rating_above_zero_excludes_unrated(
+        self, client: TestClient, sample_movies: list
+    ):
+        """Test that min_rating > 0 excludes unrated (NULL) movies."""
+        response = client.get("/api/movies?min_rating=7.0")
+        assert response.status_code == 200
+        data = response.json()
+        # Should only include rated movies >= 7.0 (5 movies), no unrated
+        assert len(data["items"]) == 5
+        # Verify no unrated movies
+        unrated = [m for m in data["items"] if m["rating"] is None]
+        assert len(unrated) == 0
+        # Verify all returned movies have rating >= 7.0
+        assert all(m["rating"] >= 7.0 for m in data["items"])
+
+    def test_get_movies_filter_max_rating_only_excludes_unrated(
+        self, client: TestClient, sample_movies: list
+    ):
+        """Test that max_rating without min_rating excludes unrated (NULL) movies."""
+        response = client.get("/api/movies?max_rating=8.0")
+        assert response.status_code == 200
+        data = response.json()
+        # Should only include rated movies <= 8.0, no unrated
+        assert len(data["items"]) == 3
+        # Verify no unrated movies
+        unrated = [m for m in data["items"] if m["rating"] is None]
+        assert len(unrated) == 0
+        # Verify all returned movies have rating <= 8.0
+        assert all(m["rating"] <= 8.0 for m in data["items"])
+
+    def test_get_movies_no_rating_filter_includes_all(
+        self, client: TestClient, sample_movies: list
+    ):
+        """Test that no rating filter includes all movies including unrated."""
+        response = client.get("/api/movies")
+        assert response.status_code == 200
+        data = response.json()
+        # Should include all 6 movies
+        assert len(data["items"]) == 6
+        # Verify unrated movie is included
+        unrated = [m for m in data["items"] if m["rating"] is None]
+        assert len(unrated) == 1
+
     def test_get_movies_filter_by_genres(self, client: TestClient, movies_with_genres: list):
         """Test filtering movies by genres (AND logic)."""
         response = client.get("/api/movies?genres=剧情")
@@ -118,11 +192,12 @@ class TestMoviesEndpoint:
         assert "犯罪" in data["items"][0]["genres"]
 
     def test_get_movies_filter_by_invalid_genre(self, client: TestClient, movies_with_genres: list):
-        """Test filtering with invalid genre ignores it gracefully."""
+        """Test filtering with invalid genre uses AND logic, returning empty for non-existent genre."""
         response = client.get("/api/movies?genres=剧情,invalid_genre")
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 2
+        # AND logic: must have BOTH 剧情 AND invalid_genre - since invalid_genre doesn't exist, returns 0
+        assert len(data["items"]) == 0
 
     def test_get_movies_search(self, client: TestClient, sample_movies: list):
         """Test searching movies by title."""
@@ -145,8 +220,16 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies?sort_by=rating&sort_order=desc")
         assert response.status_code == 200
         data = response.json()
-        ratings = [m["rating"] for m in data["items"]]
+        # Filter out NULL ratings for comparison (NULLs sort to end in desc)
+        ratings = [m["rating"] for m in data["items"] if m["rating"] is not None]
+        non_null_items = [m for m in data["items"] if m["rating"] is not None]
         assert ratings == sorted(ratings, reverse=True)
+        # Verify non-null ratings come before NULL ratings
+        null_items = [m for m in data["items"] if m["rating"] is None]
+        if null_items:
+            assert len(non_null_items) > 0
+            # NULL items should be at the end when sorting desc
+            assert data["items"].index(null_items[0]) > data["items"].index(non_null_items[-1])
 
     def test_get_movies_sort_by_rating_count(self, client: TestClient, sample_movies: list):
         """Test sorting movies by rating count."""
@@ -161,8 +244,16 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies?sort_by=rating&sort_order=asc")
         assert response.status_code == 200
         data = response.json()
-        ratings = [m["rating"] for m in data["items"]]
+        # Filter out NULL ratings for comparison (NULLs sort to beginning in asc)
+        ratings = [m["rating"] for m in data["items"] if m["rating"] is not None]
+        non_null_items = [m for m in data["items"] if m["rating"] is not None]
         assert ratings == sorted(ratings)
+        # Verify non-null ratings come after NULL ratings when sorting asc
+        null_items = [m for m in data["items"] if m["rating"] is None]
+        if null_items:
+            assert len(non_null_items) > 0
+            # NULL items should be at the beginning when sorting asc
+            assert data["items"].index(null_items[0]) < data["items"].index(non_null_items[0])
 
     def test_get_movies_cursor_pagination(self, client: TestClient, sample_movies: list):
         """Test cursor-based pagination."""
@@ -192,7 +283,8 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies?cursor=invalid_cursor")
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 5
+        # Invalid cursor falls back to returning all items
+        assert len(data["items"]) == 6
 
     def test_get_movies_combined_filters(self, client: TestClient, movies_with_genres: list):
         """Test combining multiple filters."""
@@ -266,7 +358,8 @@ class TestStatsEndpoint:
         response = client.get("/api/movies/stats")
         assert response.status_code == 200
         data = response.json()
-        assert data["total_movies"] == 3
+        # 4 movies: Drama, Comedy, Action, Unrated
+        assert data["total_movies"] == 4
         assert data["total_tv"] == 2
         assert data["total_genres"] == 0
 

@@ -245,6 +245,17 @@ def sample_movies(db_session: Session) -> list[Movie]:
             poster_url="http://example.com/p5.jpg",
             douban_url="https://movie.douban.com/subject/3002/",
         ),
+        Movie(
+            douban_id="4001",
+            imdb_id=None,
+            title="Unrated Movie",
+            year=2020,
+            rating=None,
+            rating_count=0,
+            type="movie",
+            poster_url=None,
+            douban_url="https://movie.douban.com/subject/4001/",
+        ),
     ]
     for movie in movies:
         db_session.add(movie)
