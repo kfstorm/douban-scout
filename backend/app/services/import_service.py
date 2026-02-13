@@ -6,6 +6,7 @@ import sqlite3
 import threading
 from datetime import datetime
 from pathlib import Path
+from typing import ClassVar
 
 from sqlalchemy.orm import Session
 
@@ -24,9 +25,43 @@ class ImportService:
     _lock = threading.Lock()
     _status: ImportStatus
 
-    # Minimum parts required in card_subtitle to extract genres
-    _MIN_CARD_SUBTITLE_PARTS = 3
     _MAX_ERROR_LOGS = 10  # Maximum number of errors to log with full traceback
+
+    # Valid genres
+    VALID_GENRES: ClassVar[set[str]] = {
+        "剧情",
+        "喜剧",
+        "爱情",
+        "动作",
+        "惊悚",
+        "犯罪",
+        "恐怖",
+        "动画",
+        "纪录片",
+        "短片",
+        "悬疑",
+        "冒险",
+        "科幻",
+        "奇幻",
+        "家庭",
+        "音乐",
+        "历史",
+        "战争",
+        "歌舞",
+        "传记",
+        "古装",
+        "真人秀",
+        "同性",
+        "运动",
+        "西部",
+        "情色",
+        "儿童",
+        "武侠",
+        "脱口秀",
+        "黑色电影",
+        "戏曲",
+        "灾难",
+    }
 
     def __new__(cls) -> "ImportService":
         """Create singleton instance."""
@@ -97,42 +132,6 @@ class ImportService:
             batch: list[dict] = []
             error_count = 0
 
-            # Valid genres
-            valid_genres = {
-                "剧情",
-                "喜剧",
-                "爱情",
-                "动作",
-                "惊悚",
-                "犯罪",
-                "恐怖",
-                "动画",
-                "纪录片",
-                "短片",
-                "悬疑",
-                "冒险",
-                "科幻",
-                "奇幻",
-                "家庭",
-                "音乐",
-                "历史",
-                "战争",
-                "歌舞",
-                "传记",
-                "古装",
-                "真人秀",
-                "同性",
-                "运动",
-                "西部",
-                "情色",
-                "儿童",
-                "武侠",
-                "脱口秀",
-                "黑色电影",
-                "戏曲",
-                "灾难",
-            }
-
             logger.info("Starting data import...")
             source_cursor.execute(
                 "SELECT douban_id, imdb_id, douban_title, year, rating, raw_data, type "
@@ -166,16 +165,18 @@ class ImportService:
                                 if isinstance(pic, dict):
                                     poster_url = pic.get("normal") or pic.get("large")
 
-                                # Extract genres from card_subtitle
+                                if not poster_url:
+                                    poster_url = detail.get("cover_url")
+
+                                # Extract genres from card_subtitle by checking all tokens
                                 card_subtitle = detail.get("card_subtitle", "")
                                 if card_subtitle:
-                                    parts = card_subtitle.split(" / ")
-                                    if len(parts) >= self._MIN_CARD_SUBTITLE_PARTS:
-                                        genre_part = parts[2]
-                                        for raw_genre in genre_part.split():
-                                            genre = raw_genre.strip()
-                                            if genre in valid_genres:
-                                                genres.add(genre)
+                                    # card_subtitle example: "2000 / 美国 / 剧情 喜剧"
+                                    # Split by any whitespace and "/" to get potential genre tokens
+                                    tokens = card_subtitle.replace("/", " ").split()
+                                    for token in tokens:
+                                        if token in self.VALID_GENRES:
+                                            genres.add(token)
                         except json.JSONDecodeError as e:
                             logger.warning(
                                 f"Failed to parse raw_data for douban_id {douban_id}: {e}"

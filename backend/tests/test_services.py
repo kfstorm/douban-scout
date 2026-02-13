@@ -9,9 +9,9 @@ from app.database import Movie, MovieGenre
 from app.services.import_service import ImportService
 
 
-@pytest.mark.skip(
-    reason="Import tests require complex database isolation setup with background threads"
-)
+# @pytest.mark.skip(
+#     reason="Import tests require complex database isolation setup with background threads"
+# )
 class TestImportService:
     """Tests for ImportService."""
 
@@ -49,17 +49,17 @@ class TestImportService:
         final_response = client.get("/api/import/status")
         final_status = final_response.json()
         assert final_status["status"] == "completed"
-        assert final_status["processed"] == 5
+        assert final_status["processed"] == 6
         assert final_status["percentage"] == 100.0
 
         db_session.expire_all()
         result = db_session.execute(text("SELECT COUNT(*) FROM movies"))
         count = result.scalar()
-        assert count == 5
+        assert count == 6
 
         genre_result = db_session.execute(text("SELECT COUNT(*) FROM movie_genres"))
         genre_count = genre_result.scalar()
-        assert genre_count == 6
+        assert genre_count == 10
 
     def test_import_clears_existing_data(
         self, client, sample_movies, populated_source_db, temp_source_db_path: str, db_session
@@ -68,7 +68,7 @@ class TestImportService:
         ImportService._instance = None
 
         initial_count = db_session.query(Movie).count()
-        assert initial_count == 5
+        assert initial_count == 6
 
         response = client.post("/api/import", json={"source_path": temp_source_db_path})
         assert response.status_code == 200
@@ -82,7 +82,7 @@ class TestImportService:
 
         db_session.expire_all()
         final_count = db_session.query(Movie).count()
-        assert final_count == 5
+        assert final_count == 6
 
     def test_import_extracts_genres_correctly(
         self, client, populated_source_db, temp_source_db_path: str, db_session
@@ -185,6 +185,25 @@ class TestImportService:
         assert movie.rating_count == 0
         assert movie.poster_url is None
         assert len(movie.genres) == 0
+
+    def test_import_extracts_poster_url_from_cover_url_fallback(
+        self, client, populated_source_db, temp_source_db_path: str, db_session
+    ):
+        """Test that poster URL is extracted from cover_url if pic is missing."""
+        ImportService._instance = None
+        client.post("/api/import", json={"source_path": temp_source_db_path})
+
+        for _ in range(50):
+            time.sleep(0.2)
+            status_response = client.get("/api/import/status")
+            status = status_response.json()
+            if status["status"] == "completed":
+                break
+
+        db_session.expire_all()
+        movie = db_session.query(Movie).filter(Movie.douban_id == "1300613").first()
+        assert movie is not None
+        assert movie.poster_url == "https://example.com/cover.jpg"
 
 
 class TestMovieService:
