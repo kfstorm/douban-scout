@@ -108,8 +108,10 @@ class ImportService:
             source_conn = sqlite3.connect(source_path)
             source_cursor = source_conn.cursor()
 
-            # Get total count
-            source_cursor.execute("SELECT COUNT(*) FROM item")
+            # Get total count of items to import (movie and tv).
+            # Note: Items with empty type are placeholders that only have douban_id set
+            # and should be ignored.
+            source_cursor.execute("SELECT COUNT(*) FROM item WHERE type IN ('movie', 'tv')")
             total = source_cursor.fetchone()[0]
             logger.info(f"Found {total} total records to import")
 
@@ -216,7 +218,10 @@ class ImportService:
 
                             with self._lock:
                                 self._status.processed = processed
-                                self._status.percentage = (processed / total) * 100
+                                if total > 0:
+                                    self._status.percentage = (processed / total) * 100
+                                else:
+                                    self._status.percentage = 100.0
 
                             if processed % 10000 == 0:
                                 pct = self._status.percentage

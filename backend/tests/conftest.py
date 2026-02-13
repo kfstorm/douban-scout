@@ -146,6 +146,26 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             "movie",
             1612985849.0,
         ),
+        (
+            "9999",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ),
+        (
+            "9998",
+            None,
+            "Book Item",
+            2020,
+            None,
+            "{}",
+            "book",
+            1612985849.0,
+        ),
     ]
 
     cursor.executemany(
