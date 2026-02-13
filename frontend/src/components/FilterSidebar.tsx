@@ -147,7 +147,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
       {/* Genres */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white">类型筛选 (AND)</h3>
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white">类型筛选（全匹配）</h3>
           {selectedGenres.length > 0 && (
             <button
               onClick={clearGenres}
