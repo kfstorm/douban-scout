@@ -5,7 +5,6 @@ from collections.abc import Generator
 
 from sqlalchemy import (
     Column,
-    DateTime,
     Float,
     ForeignKey,
     Integer,
@@ -35,7 +34,7 @@ class Movie(Base):  # type: ignore[misc, valid-type]
     type = Column(String(16), nullable=False, index=True)
     poster_url = Column(Text, nullable=True)
     douban_url = Column(Text, nullable=False)
-    created_at = Column(DateTime, nullable=True)
+    updated_at = Column(Integer, nullable=True)
 
     genres = relationship("MovieGenre", back_populates="movie", cascade="all, delete-orphan")  # type: ignore[var-annotated]
 

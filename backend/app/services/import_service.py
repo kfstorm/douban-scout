@@ -133,14 +133,23 @@ class ImportService:
 
                 logger.info("Starting data import...")
                 source_cursor.execute(
-                    "SELECT douban_id, imdb_id, douban_title, year, rating, raw_data, type "
-                    "FROM item WHERE type IN ('movie', 'tv')"
+                    "SELECT douban_id, imdb_id, douban_title, year, rating, raw_data, "
+                    "type, update_time FROM item WHERE type IN ('movie', 'tv')"
                 )
 
                 for row in source_cursor:
                     douban_id = None
                     try:
-                        douban_id, imdb_id, title, year, rating, raw_data, item_type = row
+                        (
+                            douban_id,
+                            imdb_id,
+                            title,
+                            year,
+                            rating,
+                            raw_data,
+                            item_type,
+                            update_time,
+                        ) = row
 
                         # Initialize defaults
                         rating_count = 0
@@ -195,6 +204,7 @@ class ImportService:
                             "poster_url": poster_url,
                             "douban_url": douban_url,
                             "genres": list(genres),
+                            "updated_at": int(update_time) if update_time else None,
                         }
 
                         batch.append(movie)

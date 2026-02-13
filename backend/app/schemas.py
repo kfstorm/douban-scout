@@ -24,7 +24,7 @@ class MovieResponse(MovieBase):
     """Movie response schema with additional fields."""
 
     id: int
-    created_at: datetime | None = None
+    updated_at: int | None = None
 
     class Config:
         """Pydantic configuration."""

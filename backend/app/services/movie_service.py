@@ -133,7 +133,7 @@ class MovieService:
                     type=movie.type,
                     douban_url=movie.douban_url,
                     genres=movie_genres,
-                    created_at=movie.created_at,
+                    updated_at=movie.updated_at,
                 )
             )
 

@@ -64,7 +64,8 @@ def source_db_connection(temp_source_db_path: str) -> Generator[sqlite3.Connecti
             year INTEGER,
             rating REAL,
             raw_data TEXT,
-            type TEXT
+            type TEXT,
+            update_time REAL
         )
     """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_type ON item (type)")
@@ -89,6 +90,7 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             '"pic": {"normal": "http://example.com/p1.jpg"}, '
             '"card_subtitle": "2000 / 美国 / 剧情 犯罪"}}',
             "movie",
+            1612985849.0,
         ),
         (
             "1002",
@@ -100,6 +102,7 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             '"pic": {"large": "http://example.com/p2.jpg"}, '
             '"card_subtitle": "2001 / 美国 / 喜剧"}}',
             "movie",
+            1612985849.0,
         ),
         (
             "1003",
@@ -109,6 +112,7 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             9.0,
             '{"detail": {"rating": {"count": 2000}, "card_subtitle": "2010 / 美国 / 剧情 悬疑"}}',
             "tv",
+            1612985849.0,
         ),
         (
             "1004",
@@ -118,35 +122,7 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             None,
             '{"detail": {"card_subtitle": "2015 / 美国 / 科幻"}}',
             "movie",
-        ),
-        (
-            "1002",
-            "tt1002",
-            "Test Movie 2",
-            2001,
-            7.5,
-            '{"detail": {"rating": {"count": 500}, '
-            '"pic": {"large": "http://example.com/p2.jpg"}, '
-            '"card_subtitle": "2001 / 喜剧"}}',
-            "movie",
-        ),
-        (
-            "1003",
-            "tt1003",
-            "Test TV Show 1",
-            2010,
-            9.0,
-            '{"detail": {"rating": {"count": 2000}, "card_subtitle": "2010 / 剧情 悬疑"}}',
-            "tv",
-        ),
-        (
-            "1004",
-            "tt1004",
-            "Test Movie No Rating",
-            2015,
-            None,
-            '{"detail": {"card_subtitle": "2015 / 美国 / 科幻"}}',
-            "movie",
+            1612985849.0,
         ),
         (
             "1005",
@@ -156,6 +132,7 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             6.0,
             "{}",
             "movie",
+            1612985849.0,
         ),
         (
             "1300613",
@@ -167,13 +144,14 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             '"cover_url": "https://example.com/cover.jpg", '
             '"card_subtitle": "1993 / 美国 / 剧情 喜剧 爱情 奇幻"}}',
             "movie",
+            1612985849.0,
         ),
     ]
 
     cursor.executemany(
         "INSERT OR REPLACE INTO item "
-        "(douban_id, imdb_id, douban_title, year, rating, raw_data, type) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "(douban_id, imdb_id, douban_title, year, rating, raw_data, type, update_time) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         test_movies,
     )
     source_db_connection.commit()
