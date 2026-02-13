@@ -84,12 +84,18 @@ class TestMoviesEndpoint:
         assert all(m["rating"] >= 8.0 for m in data["items"])
 
     def test_get_movies_filter_by_max_rating(self, client: TestClient, sample_movies: list):
-        """Test filtering movies by maximum rating."""
+        """Test filtering movies by maximum rating (includes unrated since min defaults to 0)."""
         response = client.get("/api/movies?max_rating=7.5")
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 2
-        assert all(m["rating"] <= 7.5 for m in data["items"])
+        # Should include rated <= 7.5 (Comedy 7.0, TV Show Two 7.5) + unrated = 3
+        assert len(data["items"]) == 3
+        # Verify rated movies have rating <= 7.5
+        rated = [m for m in data["items"] if m["rating"] is not None]
+        assert all(m["rating"] <= 7.5 for m in rated)
+        # Verify unrated is included
+        unrated = [m for m in data["items"] if m["rating"] is None]
+        assert len(unrated) == 1
 
     def test_get_movies_filter_by_rating_range(self, client: TestClient, sample_movies: list):
         """Test filtering movies by rating range."""
@@ -130,6 +136,21 @@ class TestMoviesEndpoint:
         high_rated = [m for m in data["items"] if m["rating"] is not None and m["rating"] > 8.0]
         assert len(high_rated) == 0
 
+    def test_get_movies_filter_min_rating_zero_max_rating_nine_point_nine(
+        self, client: TestClient, sample_movies: list
+    ):
+        """Test that min_rating=0 with max_rating=9.9 includes unrated movies."""
+        response = client.get("/api/movies?min_rating=0&max_rating=9.9")
+        assert response.status_code == 200
+        data = response.json()
+        # Should include: rated <= 9.9 (all rated movies except the one with 9.0? no, 9.0 <= 9.9) + unrated
+        # All rated movies: 8.0, 7.0, 8.5, 9.0, 7.5 = 5 movies
+        # Plus 1 unrated = 6 total
+        assert len(data["items"]) == 6
+        # Verify unrated movie is included
+        unrated = [m for m in data["items"] if m["rating"] is None]
+        assert len(unrated) == 1
+
     def test_get_movies_filter_min_rating_above_zero_excludes_unrated(
         self, client: TestClient, sample_movies: list
     ):
@@ -145,20 +166,58 @@ class TestMoviesEndpoint:
         # Verify all returned movies have rating >= 7.0
         assert all(m["rating"] >= 7.0 for m in data["items"])
 
-    def test_get_movies_filter_max_rating_only_excludes_unrated(
+    def test_get_movies_filter_min_rating_point_one_excludes_unrated(
         self, client: TestClient, sample_movies: list
     ):
-        """Test that max_rating without min_rating excludes unrated (NULL) movies."""
+        """Test that min_rating=0.1 excludes unrated (NULL) movies."""
+        response = client.get("/api/movies?min_rating=0.1")
+        assert response.status_code == 200
+        data = response.json()
+        # Should only include rated movies >= 0.1, no unrated
+        assert len(data["items"]) == 5
+        unrated = [m for m in data["items"] if m["rating"] is None]
+        assert len(unrated) == 0
+        assert all(m["rating"] is not None and m["rating"] >= 0.1 for m in data["items"])
+
+    def test_get_movies_filter_min_rating_point_one_max_ten_excludes_unrated(
+        self, client: TestClient, sample_movies: list
+    ):
+        """Test that min_rating=0.1&max_rating=10 excludes unrated movies."""
+        response = client.get("/api/movies?min_rating=0.1&max_rating=10")
+        assert response.status_code == 200
+        data = response.json()
+        # Should only include rated movies 0.1-10, no unrated
+        assert len(data["items"]) == 5
+        unrated = [m for m in data["items"] if m["rating"] is None]
+        assert len(unrated) == 0
+
+    def test_get_movies_filter_min_rating_point_one_max_nine_point_nine_excludes_unrated(
+        self, client: TestClient, sample_movies: list
+    ):
+        """Test that min_rating=0.1&max_rating=9.9 excludes unrated movies."""
+        response = client.get("/api/movies?min_rating=0.1&max_rating=9.9")
+        assert response.status_code == 200
+        data = response.json()
+        # Should only include rated movies 0.1-9.9, no unrated
+        assert len(data["items"]) == 5
+        unrated = [m for m in data["items"] if m["rating"] is None]
+        assert len(unrated) == 0
+
+    def test_get_movies_filter_max_rating_only_includes_unrated(
+        self, client: TestClient, sample_movies: list
+    ):
+        """Test that max_rating without min_rating includes unrated (NULL) movies (treats min=0)."""
         response = client.get("/api/movies?max_rating=8.0")
         assert response.status_code == 200
         data = response.json()
-        # Should only include rated movies <= 8.0, no unrated
-        assert len(data["items"]) == 3
-        # Verify no unrated movies
+        # Should include rated <= 8.0 (Drama 8.0, Comedy 7.0, TV Show Two 7.5) + unrated
+        assert len(data["items"]) == 4
+        # Verify unrated movie is included
         unrated = [m for m in data["items"] if m["rating"] is None]
-        assert len(unrated) == 0
-        # Verify all returned movies have rating <= 8.0
-        assert all(m["rating"] <= 8.0 for m in data["items"])
+        assert len(unrated) == 1
+        # Verify all rated movies have rating <= 8.0
+        rated = [m for m in data["items"] if m["rating"] is not None]
+        assert all(m["rating"] <= 8.0 for m in rated)
 
     def test_get_movies_no_rating_filter_includes_all(
         self, client: TestClient, sample_movies: list

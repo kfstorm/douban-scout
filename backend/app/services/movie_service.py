@@ -12,12 +12,14 @@ from app.schemas import GenreCount, MovieResponse, MoviesListResponse, StatsResp
 
 logger = logging.getLogger("douban.movies")
 
+MAX_RATING = 10.0
+
 
 class MovieService:
     """Service for movie-related operations."""
 
     @staticmethod
-    def get_movies(  # noqa: PLR0912, PLR0913, PLR0915
+    def get_movies(  # noqa: PLR0912, PLR0913
         db: Session,
         cursor: str | None = None,
         limit: int = 20,
@@ -39,25 +41,21 @@ class MovieService:
             query = query.filter(Movie.type == type)
 
         # Rating filters
-        # When min_rating is 0, include NULL ratings (unrated items)
+        # When min_rating is not set or 0, include NULL ratings
         # When min_rating > 0, exclude NULL ratings
-        if min_rating is not None and min_rating > 0:
+        effective_min = min_rating if min_rating is not None else 0
+        effective_max = max_rating if max_rating is not None else MAX_RATING
+
+        if effective_min > 0:
+            # Exclude NULL ratings when min > 0
             query = query.filter(Movie.rating.isnot(None))
-            if max_rating is not None:
-                query = query.filter(Movie.rating.between(min_rating, max_rating))
-            else:
-                query = query.filter(Movie.rating >= min_rating)
-        elif min_rating is not None and min_rating == 0:
-            # Include rated items in range AND unrated (NULL) items
-            if max_rating is not None:
-                query = query.filter(
-                    ((Movie.rating >= 0) & (Movie.rating <= max_rating)) | (Movie.rating.is_(None))
-                )
-            # If no max_rating, no filter needed since all ratings >= 0
-        elif max_rating is not None:
-            # Only max_rating set, exclude NULL
-            query = query.filter(Movie.rating.isnot(None))
-            query = query.filter(Movie.rating <= max_rating)
+            query = query.filter(Movie.rating.between(effective_min, effective_max))
+        elif effective_max < MAX_RATING:
+            # Include NULL ratings, but filter by max_rating
+            query = query.filter(
+                ((Movie.rating >= 0) & (Movie.rating <= effective_max)) | (Movie.rating.is_(None))
+            )
+        # else: effective_min=0 and effective_max=10, no filter needed
 
         if min_rating_count is not None:
             query = query.filter(Movie.rating_count >= min_rating_count)
