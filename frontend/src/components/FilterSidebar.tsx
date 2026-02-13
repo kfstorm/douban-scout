@@ -1,14 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { useQuery } from '@tanstack/react-query';
 import { useFilterStore } from '../store/useFilterStore';
-
-const ALL_GENRES = [
-  '剧情', '喜剧', '爱情', '动作', '惊悚', '犯罪', '恐怖', '动画',
-  '纪录片', '短片', '悬疑', '冒险', '科幻', '奇幻', '家庭', '音乐',
-  '历史', '战争', '歌舞', '传记', '古装', '真人秀', '同性', '运动',
-  '西部', '情色', '儿童', '武侠', '脱口秀', '黑色电影', '戏曲', '灾难'
-];
+import { moviesApi } from '../services/api';
 
 interface FilterSidebarProps {
   isOpen: boolean;
@@ -34,6 +29,13 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
     setSortOrder,
     resetFilters,
   } = useFilterStore();
+
+  // Fetch genres from backend
+  const { data: genresData, isLoading: isLoadingGenres } = useQuery({
+    queryKey: ['genres', type],
+    queryFn: () => moviesApi.getGenres(type || undefined),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -69,7 +71,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            电视剧
+            电视节目
           </button>
         </div>
       </div>
@@ -155,21 +157,33 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
             </button>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
-          {ALL_GENRES.map((genre) => (
-            <button
-              key={genre}
-              onClick={() => toggleGenre(genre)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                selectedGenres.includes(genre)
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {genre}
-            </button>
-          ))}
-        </div>
+        {isLoadingGenres ? (
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className="px-3 py-1 rounded-full text-xs bg-gray-200 dark:bg-gray-700 animate-pulse w-12 h-6"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {genresData?.map((genreItem) => (
+              <button
+                key={genreItem.genre}
+                onClick={() => toggleGenre(genreItem.genre)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  selectedGenres.includes(genreItem.genre)
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                title={`${genreItem.count} 部作品`}
+              >
+                {genreItem.genre}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Reset */}

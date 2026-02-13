@@ -23,7 +23,7 @@ export const SearchBar: React.FC = () => {
         type="text"
         value={localQuery}
         onChange={(e) => setLocalQuery(e.target.value)}
-        placeholder="搜索电影标题..."
+        placeholder="搜索作品标题..."
         className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
       />
     </div>

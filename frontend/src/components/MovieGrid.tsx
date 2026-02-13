@@ -106,7 +106,7 @@ export const MovieGrid: React.FC = () => {
   if (movies.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 dark:text-gray-400 text-lg">没有找到符合条件的电影</p>
+        <p className="text-gray-600 dark:text-gray-400 text-lg">没有找到符合条件的作品</p>
         <p className="text-gray-500 dark:text-gray-500 mt-2">请尝试调整筛选条件</p>
       </div>
     );
@@ -115,7 +115,7 @@ export const MovieGrid: React.FC = () => {
   return (
     <div>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        共找到 {total.toLocaleString()} 部电影
+        共找到 {total.toLocaleString()} 部作品
       </p>
       
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
