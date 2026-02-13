@@ -18,14 +18,16 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
     maxRating,
     minRatingCount,
     selectedGenres,
+    excludedGenres,
     sortBy,
     sortOrder,
     setType,
     setMinRating,
     setMaxRating,
     setMinRatingCount,
-    toggleGenre,
     clearGenres,
+    cycleGenre,
+    clearExcludedGenres,
     setSortBy,
     setSortOrder,
     resetFilters,
@@ -177,13 +179,21 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
       {/* Genres */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white">类型筛选（全匹配）</h3>
-          {selectedGenres.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">类型筛选</h3>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">
+              点击切换：未选中 → 包含 → 排除
+            </p>
+          </div>
+          {(selectedGenres.length > 0 || excludedGenres.length > 0) && (
             <button
-              onClick={clearGenres}
+              onClick={() => {
+                clearGenres();
+                clearExcludedGenres();
+              }}
               className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
             >
-              清除 ({selectedGenres.length})
+              清除 ({selectedGenres.length + excludedGenres.length})
             </button>
           )}
         </div>
@@ -198,20 +208,30 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
           </div>
         ) : (
           <div className="flex flex-wrap gap-2">
-            {genresData?.map((genreItem) => (
-              <button
-                key={genreItem.genre}
-                onClick={() => toggleGenre(genreItem.genre)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  selectedGenres.includes(genreItem.genre)
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-                title={`${genreItem.count} 部作品`}
-              >
-                {genreItem.genre}
-              </button>
-            ))}
+            {genresData?.map((genreItem) => {
+              const isSelected = selectedGenres.includes(genreItem.genre);
+              const isExcluded = excludedGenres.includes(genreItem.genre);
+
+              return (
+                <button
+                  key={genreItem.genre}
+                  onClick={() => cycleGenre(genreItem.genre)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    isSelected
+                      ? 'bg-primary-500 text-white'
+                      : isExcluded
+                        ? 'bg-red-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  title={`${genreItem.genre}: ${genreItem.count} 部作品${
+                    isSelected ? ' (包含)' : isExcluded ? ' (排除)' : ''
+                  }`}
+                >
+                  {isExcluded && <span className="mr-1">✕</span>}
+                  {genreItem.genre}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

@@ -18,6 +18,7 @@ export interface MoviesParams {
   max_rating?: number;
   min_rating_count?: number;
   genres?: string[];
+  exclude_genres?: string[];
   search?: string;
   sort_by?: 'rating' | 'rating_count' | 'year';
   sort_order?: 'asc' | 'desc';
@@ -29,6 +30,7 @@ export const moviesApi = {
       params: {
         ...params,
         genres: params.genres?.join(','),
+        exclude_genres: params.exclude_genres?.join(','),
       },
     });
     return response.data;

@@ -7,6 +7,7 @@ export interface FilterState {
   maxRating: number;
   minRatingCount: number;
   selectedGenres: string[];
+  excludedGenres: string[];
   searchQuery: string;
   sortBy: 'rating' | 'rating_count' | 'year';
   sortOrder: 'asc' | 'desc';
@@ -18,6 +19,9 @@ export interface FilterState {
   setMinRatingCount: (count: number) => void;
   toggleGenre: (genre: string) => void;
   clearGenres: () => void;
+  toggleExcludedGenre: (genre: string) => void;
+  clearExcludedGenres: () => void;
+  cycleGenre: (genre: string) => void;
   setSearchQuery: (query: string) => void;
   setSortBy: (sortBy: 'rating' | 'rating_count' | 'year') => void;
   setSortOrder: (order: 'asc' | 'desc') => void;
@@ -30,6 +34,7 @@ const initialState = {
   maxRating: 10,
   minRatingCount: 0,
   selectedGenres: [] as string[],
+  excludedGenres: [] as string[],
   searchQuery: '',
   sortBy: 'rating' as const,
   sortOrder: 'desc' as const,
@@ -53,9 +58,44 @@ export const useFilterStore = create<FilterState>()(
           selectedGenres: state.selectedGenres.includes(genre)
             ? state.selectedGenres.filter((g) => g !== genre)
             : [...state.selectedGenres, genre],
+          // If a genre is selected, it cannot be excluded
+          excludedGenres: state.excludedGenres.filter((g) => g !== genre),
         })),
 
       clearGenres: () => set({ selectedGenres: [] }),
+
+      toggleExcludedGenre: (genre) =>
+        set((state) => ({
+          excludedGenres: state.excludedGenres.includes(genre)
+            ? state.excludedGenres.filter((g) => g !== genre)
+            : [...state.excludedGenres, genre],
+          // If a genre is excluded, it cannot be selected (inclusive)
+          selectedGenres: state.selectedGenres.filter((g) => g !== genre),
+        })),
+
+      clearExcludedGenres: () => set({ excludedGenres: [] }),
+
+      cycleGenre: (genre) =>
+        set((state) => {
+          if (state.selectedGenres.includes(genre)) {
+            // Included -> Excluded
+            return {
+              selectedGenres: state.selectedGenres.filter((g) => g !== genre),
+              excludedGenres: [...state.excludedGenres, genre],
+            };
+          } else if (state.excludedGenres.includes(genre)) {
+            // Excluded -> Unselected
+            return {
+              excludedGenres: state.excludedGenres.filter((g) => g !== genre),
+            };
+          } else {
+            // Unselected -> Included
+            return {
+              selectedGenres: [...state.selectedGenres, genre],
+              excludedGenres: state.excludedGenres.filter((g) => g !== genre),
+            };
+          }
+        }),
 
       setSearchQuery: (searchQuery) => set({ searchQuery }),
 
