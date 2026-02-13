@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 import { MovieGrid } from './components/MovieGrid';
 import { FilterSidebar } from './components/FilterSidebar';
-import { SearchBar } from './components/SearchBar';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ImportStatusBanner } from './components/ImportStatus';
 import { useFilterStore } from './store/useFilterStore';
@@ -58,11 +57,6 @@ function App() {
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">豆瓣影视探索</h1>
             </div>
 
-            {/* Search - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-md mx-8">
-              <SearchBar />
-            </div>
-
             {/* Actions */}
             <div className="flex items-center gap-2">
               <button
@@ -79,11 +73,6 @@ function App() {
               </button>
               <ThemeToggle />
             </div>
-          </div>
-
-          {/* Search - Mobile */}
-          <div className="md:hidden pb-4">
-            <SearchBar />
           </div>
         </div>
       </header>

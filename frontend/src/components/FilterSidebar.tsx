@@ -4,6 +4,7 @@ import { XMarkIcon, FunnelIcon, InformationCircleIcon } from '@heroicons/react/2
 import { useQuery } from '@tanstack/react-query';
 import { useFilterStore } from '../store/useFilterStore';
 import { moviesApi } from '../services/api';
+import { SearchBar } from './SearchBar';
 
 interface FilterSidebarProps {
   isOpen: boolean;
@@ -39,6 +40,12 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
 
   const content = (
     <div className="space-y-6">
+      {/* Title Search */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">标题搜索</h3>
+        <SearchBar />
+      </div>
+
       {/* Type Filter */}
       <div>
         <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">类型</h3>

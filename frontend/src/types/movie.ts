@@ -9,7 +9,7 @@ export interface Movie {
   type: 'movie' | 'tv';
   douban_url: string;
   genres: string[];
-  created_at: string | null;
+  updated_at: number | null;
 }
 
 export interface MoviesListResponse {
