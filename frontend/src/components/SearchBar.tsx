@@ -5,14 +5,17 @@ import { useFilterStore } from '../store/useFilterStore';
 export const SearchBar: React.FC = () => {
   const { searchQuery, setSearchQuery } = useFilterStore();
   const [localQuery, setLocalQuery] = useState(searchQuery);
+  const [isComposing, setIsComposing] = useState(false);
 
   useEffect(() => {
+    if (isComposing) return;
+
     const timer = setTimeout(() => {
       setSearchQuery(localQuery);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [localQuery, setSearchQuery]);
+  }, [localQuery, isComposing, setSearchQuery]);
 
   return (
     <div className="relative">
@@ -23,6 +26,8 @@ export const SearchBar: React.FC = () => {
         type="text"
         value={localQuery}
         onChange={(e) => setLocalQuery(e.target.value)}
+        onCompositionStart={() => setIsComposing(true)}
+        onCompositionEnd={() => setIsComposing(false)}
         placeholder="搜索作品标题..."
         className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
       />
