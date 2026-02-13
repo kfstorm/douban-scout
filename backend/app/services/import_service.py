@@ -116,118 +116,121 @@ class ImportService:
             with self._lock:
                 self._status.total = total
 
-            # Clear existing data
-            logger.info("Clearing existing data...")
             with Session(app_db.engine) as db:
+                # Clear existing data
+                logger.info("Clearing existing data...")
                 deleted_genres = db.query(MovieGenre).delete()
                 deleted_movies = db.query(Movie).delete()
-                db.commit()
                 logger.info(
                     f"Cleared {deleted_movies} movies and {deleted_genres} genre associations"
                 )
 
-            # Import in batches
-            batch_size = 1000
-            processed = 0
-            batch: list[dict] = []
-            error_count = 0
+                # Import in batches
+                batch_size = 1000
+                processed = 0
+                batch: list[dict] = []
+                error_count = 0
 
-            logger.info("Starting data import...")
-            source_cursor.execute(
-                "SELECT douban_id, imdb_id, douban_title, year, rating, raw_data, type "
-                "FROM item WHERE type IN ('movie', 'tv')"
-            )
+                logger.info("Starting data import...")
+                source_cursor.execute(
+                    "SELECT douban_id, imdb_id, douban_title, year, rating, raw_data, type "
+                    "FROM item WHERE type IN ('movie', 'tv')"
+                )
 
-            for row in source_cursor:
-                douban_id = None
-                try:
-                    douban_id, imdb_id, title, year, rating, raw_data, item_type = row
+                for row in source_cursor:
+                    douban_id = None
+                    try:
+                        douban_id, imdb_id, title, year, rating, raw_data, item_type = row
 
-                    # Initialize defaults
-                    rating_count = 0
-                    poster_url = None
-                    genres: set[str] = set()
+                        # Initialize defaults
+                        rating_count = 0
+                        poster_url = None
+                        genres: set[str] = set()
 
-                    # Parse raw_data JSON
-                    if raw_data:
-                        try:
-                            data = json.loads(raw_data)
-                            detail = data.get("detail", {})
+                        # Parse raw_data JSON
+                        if raw_data:
+                            try:
+                                data = json.loads(raw_data)
+                                detail = data.get("detail", {})
 
-                            # Extract rating count
-                            if isinstance(detail, dict):
-                                rating_info = detail.get("rating", {})
-                                if isinstance(rating_info, dict):
-                                    rating_count = rating_info.get("count", 0)
+                                # Extract rating count
+                                if isinstance(detail, dict):
+                                    rating_info = detail.get("rating", {})
+                                    if isinstance(rating_info, dict):
+                                        rating_count = rating_info.get("count", 0)
 
-                                # Extract poster URL
-                                pic = detail.get("pic", {})
-                                if isinstance(pic, dict):
-                                    poster_url = pic.get("normal") or pic.get("large")
+                                    # Extract poster URL
+                                    pic = detail.get("pic", {})
+                                    if isinstance(pic, dict):
+                                        poster_url = pic.get("normal") or pic.get("large")
 
-                                if not poster_url:
-                                    poster_url = detail.get("cover_url")
+                                    if not poster_url:
+                                        poster_url = detail.get("cover_url")
 
-                                # Extract genres from card_subtitle by checking all tokens
-                                card_subtitle = detail.get("card_subtitle", "")
-                                if card_subtitle:
-                                    # card_subtitle example: "2000 / 美国 / 剧情 喜剧"
-                                    # Split by any whitespace and "/" to get potential genre tokens
-                                    tokens = card_subtitle.replace("/", " ").split()
-                                    for token in tokens:
-                                        if token in self.VALID_GENRES:
-                                            genres.add(token)
-                        except json.JSONDecodeError as e:
+                                    # Extract genres from card_subtitle by checking all tokens
+                                    card_subtitle = detail.get("card_subtitle", "")
+                                    if card_subtitle:
+                                        # card_subtitle example: "2000 / 美国 / 剧情 喜剧"
+                                        # Split by any whitespace and "/" to get genre tokens
+                                        tokens = card_subtitle.replace("/", " ").split()
+                                        for token in tokens:
+                                            if token in self.VALID_GENRES:
+                                                genres.add(token)
+                            except json.JSONDecodeError as e:
+                                logger.warning(
+                                    f"Failed to parse raw_data for douban_id {douban_id}: {e}"
+                                )
+
+                        # Build douban_url
+                        douban_url = f"https://movie.douban.com/subject/{douban_id}/"
+
+                        movie = {
+                            "douban_id": douban_id,
+                            "imdb_id": imdb_id,
+                            "title": title or "",
+                            "year": year,
+                            "rating": rating,
+                            "rating_count": rating_count,
+                            "type": item_type,
+                            "poster_url": poster_url,
+                            "douban_url": douban_url,
+                            "genres": list(genres),
+                        }
+
+                        batch.append(movie)
+
+                        if len(batch) >= batch_size:
+                            self._insert_batch(db, batch)
+                            processed += len(batch)
+                            batch = []
+
+                            with self._lock:
+                                self._status.processed = processed
+                                self._status.percentage = (processed / total) * 100
+
+                            if processed % 10000 == 0:
+                                pct = self._status.percentage
+                                logger.info(f"Imported {processed}/{total} records ({pct:.1f}%)")
+
+                    except Exception as e:
+                        error_count += 1
+                        logger.error(f"Error processing row {douban_id}: {e}", exc_info=True)
+                        if error_count <= self._MAX_ERROR_LOGS:
+                            continue
+                        else:
                             logger.warning(
-                                f"Failed to parse raw_data for douban_id {douban_id}: {e}"
+                                f"Suppressing detailed error logs after {error_count} errors"
                             )
 
-                    # Build douban_url
-                    douban_url = f"https://movie.douban.com/subject/{douban_id}/"
+                # Insert remaining
+                if batch:
+                    logger.info(f"Inserting final batch of {len(batch)} records...")
+                    self._insert_batch(db, batch)
+                    processed += len(batch)
 
-                    movie = {
-                        "douban_id": douban_id,
-                        "imdb_id": imdb_id,
-                        "title": title or "",
-                        "year": year,
-                        "rating": rating,
-                        "rating_count": rating_count,
-                        "type": item_type,
-                        "poster_url": poster_url,
-                        "douban_url": douban_url,
-                        "genres": list(genres),
-                    }
-
-                    batch.append(movie)
-
-                    if len(batch) >= batch_size:
-                        self._insert_batch(batch)
-                        processed += len(batch)
-                        batch = []
-
-                        with self._lock:
-                            self._status.processed = processed
-                            self._status.percentage = (processed / total) * 100
-
-                        if processed % 10000 == 0:
-                            pct = self._status.percentage
-                            logger.info(f"Imported {processed}/{total} records ({pct:.1f}%)")
-
-                except Exception as e:
-                    error_count += 1
-                    logger.error(f"Error processing row {douban_id}: {e}", exc_info=True)
-                    if error_count <= self._MAX_ERROR_LOGS:
-                        continue
-                    else:
-                        logger.warning(
-                            f"Suppressing detailed error logs after {error_count} errors"
-                        )
-
-            # Insert remaining
-            if batch:
-                logger.info(f"Inserting final batch of {len(batch)} records...")
-                self._insert_batch(batch)
-                processed += len(batch)
+                # Commit the entire transaction
+                logger.info("Committing transaction...")
+                db.commit()
 
             source_conn.close()
 
@@ -248,22 +251,22 @@ class ImportService:
                 self._status.message = str(e)
                 self._status.completed_at = datetime.now()
 
-    def _insert_batch(self, movies: list[dict]) -> None:
+    def _insert_batch(self, db: Session, movies: list[dict]) -> None:
         """Insert a batch of movies and their genres."""
         try:
-            with Session(app_db.engine) as db:
-                for movie_data in movies:
-                    genres = movie_data.pop("genres", [])
+            for movie_data in movies:
+                genres = movie_data.pop("genres", [])
 
-                    movie = Movie(**movie_data)
-                    db.add(movie)
-                    db.flush()
+                movie = Movie(**movie_data)
+                db.add(movie)
+                db.flush()
 
-                    for genre in genres:
-                        db.add(MovieGenre(movie_id=movie.id, genre=genre))
+                for genre in genres:
+                    db.add(MovieGenre(movie_id=movie.id, genre=genre))
 
-                db.commit()
-                logger.debug(f"Inserted batch of {len(movies)} movies")
+            db.flush()
+            db.expunge_all()
+            logger.debug(f"Inserted batch of {len(movies)} movies")
         except Exception as e:
             logger.exception(f"Failed to insert batch: {e}")
             raise

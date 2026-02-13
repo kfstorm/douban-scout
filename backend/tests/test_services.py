@@ -1,6 +1,7 @@
 """Service layer tests."""
 
 import time
+from unittest.mock import patch
 
 from sqlalchemy import text
 
@@ -200,6 +201,39 @@ class TestImportService:
         movie = db_session.query(Movie).filter(Movie.douban_id == "1300613").first()
         assert movie is not None
         assert movie.poster_url == "https://example.com/cover.jpg"
+
+    def test_import_rollback_on_failure(
+        self, client, sample_movies, populated_source_db, temp_source_db_path: str, db_session
+    ):
+        """Test that if an import fails, the database is rolled back to its previous state."""
+        ImportService._instance = None
+
+        # Initial count should be from sample_movies
+        initial_count = db_session.query(Movie).count()
+        assert initial_count == 6
+
+        def side_effect_fail(*args, **kwargs):
+            raise Exception("Simulated import failure")
+
+        with patch.object(ImportService, "_insert_batch", side_effect=side_effect_fail):
+            response = client.post("/api/import", json={"source_path": temp_source_db_path})
+            assert response.status_code == 200
+
+            # Wait for import to fail
+            status = {}
+            for _ in range(50):
+                time.sleep(0.1)
+                status = client.get("/api/import/status").json()
+                if status["status"] == "failed":
+                    break
+
+            assert status["status"] == "failed"
+            assert "Simulated import failure" in status["message"]
+
+        # Check database state - it should STILL have 6 movies if atomic
+        db_session.expire_all()
+        final_count = db_session.query(Movie).count()
+        assert final_count == 6
 
 
 class TestMovieService:
