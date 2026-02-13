@@ -24,6 +24,9 @@ def get_movies(  # noqa: PLR0913
     max_rating: float | None = Query(None, ge=0, le=10, description="Maximum rating"),
     min_rating_count: int | None = Query(None, ge=0, description="Minimum rating count"),
     genres: str | None = Query(None, description="Comma-separated genres (AND logic)"),
+    exclude_genres: str | None = Query(
+        None, description="Comma-separated genres to exclude (OR logic)"
+    ),
     search: str | None = Query(None, description="Search in title"),
     sort_by: Literal["rating", "rating_count", "year"] = Query("rating", description="Sort field"),
     sort_order: Literal["asc", "desc"] = Query("desc", description="Sort order"),
@@ -31,6 +34,7 @@ def get_movies(  # noqa: PLR0913
 ) -> MoviesListResponse:
     """Get movies with filtering and pagination."""
     genre_list = genres.split(",") if genres else None
+    exclude_genre_list = exclude_genres.split(",") if exclude_genres else None
 
     return movie_service.get_movies(
         db=db,
@@ -41,6 +45,7 @@ def get_movies(  # noqa: PLR0913
         max_rating=max_rating,
         min_rating_count=min_rating_count,
         genres=genre_list,
+        exclude_genres=exclude_genre_list,
         search=search,
         sort_by=sort_by,
         sort_order=sort_order,

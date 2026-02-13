@@ -28,12 +28,16 @@ class MovieService:
         max_rating: float | None = None,
         min_rating_count: int | None = None,
         genres: list[str] | None = None,
+        exclude_genres: list[str] | None = None,
         search: str | None = None,
         sort_by: str = "rating",
         sort_order: str = "desc",
     ) -> MoviesListResponse:
         """Get movies with filtering and pagination."""
-        logger.debug(f"Querying movies with filters: type={type}, genres={genres}, search={search}")
+        logger.debug(
+            f"Querying movies with filters: type={type}, genres={genres}, "
+            f"exclude_genres={exclude_genres}, search={search}"
+        )
         query = db.query(Movie)
 
         # Apply filters
@@ -68,6 +72,13 @@ class MovieService:
             for genre in genres:
                 query = query.filter(
                     Movie.id.in_(db.query(MovieGenre.movie_id).filter(MovieGenre.genre == genre))
+                )
+
+        # Exclusion logic for genres
+        if exclude_genres:
+            for genre in exclude_genres:
+                query = query.filter(
+                    ~Movie.id.in_(db.query(MovieGenre.movie_id).filter(MovieGenre.genre == genre))
                 )
 
         # Get total count
