@@ -16,7 +16,6 @@ class MovieBase(BaseModel):
     rating: float | None = None
     rating_count: int = 0
     type: Literal["movie", "tv"]
-    poster_url: str | None = None
     douban_url: str
     genres: list[str] = []
 

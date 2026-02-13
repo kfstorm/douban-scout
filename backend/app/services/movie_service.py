@@ -155,7 +155,6 @@ class MovieService:
                     rating=movie.rating,
                     rating_count=movie.rating_count,
                     type=movie.type,
-                    poster_url=movie.poster_url,
                     douban_url=movie.douban_url,
                     genres=movie_genres,
                     created_at=movie.created_at,

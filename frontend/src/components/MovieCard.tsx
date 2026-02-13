@@ -1,4 +1,5 @@
 import React from 'react';
+import { getPosterProxyUrl } from '../services/api';
 import type { Movie } from '../types/movie';
 
 interface MovieCardProps {
@@ -28,20 +29,15 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
       className="group block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden"
     >
       <div className="aspect-[2/3] relative overflow-hidden bg-gray-200 dark:bg-gray-700">
-        {movie.poster_url ? (
-          <img
-            src={movie.poster_url}
-            alt={movie.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-            </svg>
-          </div>
-        )}
+        <img
+          src={getPosterProxyUrl(movie.douban_id)}
+          alt={movie.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
         
         {/* Rating badge */}
         {movie.rating && (

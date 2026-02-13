@@ -7,7 +7,6 @@ export interface Movie {
   rating: number | null;
   rating_count: number;
   type: 'movie' | 'tv';
-  poster_url: string | null;
   douban_url: string;
   genres: string[];
   created_at: string | null;

@@ -2,10 +2,12 @@
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import Movie, get_db
 from app.schemas import GenreCount, MoviesListResponse, StatsResponse
 from app.services.movie_service import movie_service
 
@@ -61,3 +63,46 @@ def get_stats(
 ) -> StatsResponse:
     """Get database statistics."""
     return movie_service.get_stats(db)
+
+
+@router.get("/{douban_id}/poster")
+async def get_poster(
+    douban_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+) -> StreamingResponse:
+    """Proxy poster images from Douban to bypass CORS restrictions.
+
+    Fetches the poster_url from the database for the given douban_id,
+    then proxies the image from Douban's CDN.
+    """
+    # Fetch poster_url from database
+    movie = db.query(Movie).filter(Movie.douban_id == douban_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+
+    if not movie.poster_url:
+        raise HTTPException(status_code=404, detail="No poster available for this movie")
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Referer": "https://movie.douban.com/",
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(movie.poster_url, headers=headers, timeout=10.0)
+            response.raise_for_status()
+
+            content_type = response.headers.get("content-type", "image/jpeg")
+            return StreamingResponse(
+                response.aiter_bytes(),
+                media_type=content_type,
+                headers={
+                    "Cache-Control": "public, max-age=86400",
+                },
+            )
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch poster: {e}") from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {e}") from e
