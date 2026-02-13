@@ -4,7 +4,7 @@ import base64
 import json
 import logging
 
-from sqlalchemy import and_, func
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import Movie, MovieGenre
@@ -19,7 +19,7 @@ class MovieService:
     """Service for movie-related operations."""
 
     @staticmethod
-    def get_movies(  # noqa: PLR0912, PLR0913
+    def get_movies(  # noqa: PLR0912, PLR0913, PLR0915
         db: Session,
         cursor: str | None = None,
         limit: int = 20,
@@ -80,23 +80,26 @@ class MovieService:
                 cursor_value = cursor_data.get("value")
                 cursor_id = cursor_data.get("id")
 
+                sort_column = getattr(Movie, sort_by, Movie.rating)
+
                 if sort_order == "desc":
-                    query = query.filter(
-                        and_(
-                            getattr(Movie, sort_by) < cursor_value if cursor_value else True,
-                            Movie.id < cursor_id,
+                    if cursor_value is not None:
+                        query = query.filter(
+                            (sort_column < cursor_value)
+                            | (sort_column.is_(None))
+                            | ((sort_column == cursor_value) & (Movie.id < cursor_id))
                         )
-                        if cursor_value
-                        else Movie.id < cursor_id
+                    else:
+                        query = query.filter((sort_column.is_(None)) & (Movie.id < cursor_id))
+                elif cursor_value is not None:
+                    query = query.filter(
+                        (sort_column > cursor_value)
+                        | ((sort_column == cursor_value) & (Movie.id > cursor_id))
                     )
                 else:
                     query = query.filter(
-                        and_(
-                            getattr(Movie, sort_by) > cursor_value if cursor_value else True,
-                            Movie.id > cursor_id,
-                        )
-                        if cursor_value
-                        else Movie.id > cursor_id
+                        (sort_column.isnot(None))
+                        | ((sort_column.is_(None)) & (Movie.id > cursor_id))
                     )
             except (json.JSONDecodeError, ValueError):
                 pass  # Invalid cursor, ignore

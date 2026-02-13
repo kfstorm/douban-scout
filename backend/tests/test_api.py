@@ -6,6 +6,9 @@ from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.database import Movie
 
 
 class TestHealthEndpoint:
@@ -336,6 +339,50 @@ class TestMoviesEndpoint:
             )
             data3 = response3.json()
             assert len(data3["items"]) <= 2
+
+    def test_get_movies_cursor_pagination_tie_breaking(
+        self, client: TestClient, db_session: Session
+    ):
+        """Test that pagination correctly handles tie-breaking for duplicate values."""
+        # Create 10 movies with identical rating_count
+        for i in range(1, 11):
+            movie = Movie(
+                douban_id=f"movie_{i}",
+                title=f"Movie {i}",
+                rating_count=1000,
+                type="movie",
+                douban_url=f"https://movie.douban.com/subject/{i}/",
+            )
+            db_session.add(movie)
+        db_session.commit()
+
+        # Get first page (limit=5)
+        response = client.get("/api/movies?limit=5&sort_by=rating_count&sort_order=desc")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 5
+        assert data["total"] == 10
+
+        # Get all IDs from first page
+        first_page_ids = [m["id"] for m in data["items"]]
+        next_cursor = data["next_cursor"]
+        assert next_cursor is not None
+
+        # Get second page
+        response = client.get(
+            f"/api/movies?limit=5&sort_by=rating_count&sort_order=desc&cursor={next_cursor}"
+        )
+        assert response.status_code == 200
+        data = response.json()
+
+        assert len(data["items"]) == 5
+        second_page_ids = [m["id"] for m in data["items"]]
+
+        # Ensure no overlap
+        assert set(first_page_ids).isdisjoint(set(second_page_ids))
+
+        # Ensure all 10 movies are covered
+        assert len(set(first_page_ids) | set(second_page_ids)) == 10
 
     def test_get_movies_invalid_cursor(self, client: TestClient, sample_movies: list):
         """Test invalid cursor is handled gracefully."""

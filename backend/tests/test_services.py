@@ -9,9 +9,6 @@ from app.database import Movie, MovieGenre
 from app.services.import_service import ImportService
 
 
-# @pytest.mark.skip(
-#     reason="Import tests require complex database isolation setup with background threads"
-# )
 class TestImportService:
     """Tests for ImportService."""
 
