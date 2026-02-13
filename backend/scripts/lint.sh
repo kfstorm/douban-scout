@@ -5,11 +5,11 @@ set -e
 cd "$(dirname "$0")/.."
 
 echo "=== Running Ruff linter ==="
-uv run ruff check app/
+uv run ruff check .
 
 echo ""
 echo "=== Running Ruff formatter (check mode) ==="
-uv run ruff format --check app/
+uv run ruff format --check .
 
 echo ""
 echo "=== Running MyPy type checker ==="

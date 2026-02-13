@@ -1,10 +1,5 @@
 """API endpoint tests."""
 
-import os
-import time
-from unittest.mock import patch
-
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -126,7 +121,7 @@ class TestMoviesEndpoint:
     def test_get_movies_filter_min_rating_zero_max_rating_excludes_high_ratings(
         self, client: TestClient, sample_movies: list
     ):
-        """Test that min_rating=0 with max_rating excludes high-rated movies but includes unrated."""
+        """Test that min_rating=0 with max_rating excludes high-rated but includes unrated."""
         response = client.get("/api/movies?min_rating=0&max_rating=8.0")
         assert response.status_code == 200
         data = response.json()
@@ -146,7 +141,7 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies?min_rating=0&max_rating=9.9")
         assert response.status_code == 200
         data = response.json()
-        # Should include: rated <= 9.9 (all rated movies except the one with 9.0? no, 9.0 <= 9.9) + unrated
+        # Should include: rated <= 9.9 (all rated movies including 9.0) + unrated
         # All rated movies: 8.0, 7.0, 8.5, 9.0, 7.5 = 5 movies
         # Plus 1 unrated = 6 total
         assert len(data["items"]) == 6
@@ -254,11 +249,11 @@ class TestMoviesEndpoint:
         assert "犯罪" in data["items"][0]["genres"]
 
     def test_get_movies_filter_by_invalid_genre(self, client: TestClient, movies_with_genres: list):
-        """Test filtering with invalid genre uses AND logic, returning empty for non-existent genre."""
+        """Test filtering with invalid genre returns empty due to AND logic."""
         response = client.get("/api/movies?genres=剧情,invalid_genre")
         assert response.status_code == 200
         data = response.json()
-        # AND logic: must have BOTH 剧情 AND invalid_genre - since invalid_genre doesn't exist, returns 0
+        # must have BOTH 剧情 AND invalid_genre - since invalid_genre doesn't exist, returns 0
         assert len(data["items"]) == 0
 
     def test_get_movies_search(self, client: TestClient, sample_movies: list):

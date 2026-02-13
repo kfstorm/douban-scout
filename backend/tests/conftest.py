@@ -1,14 +1,13 @@
 """Pytest configuration and fixtures."""
 
-import os
 import sqlite3
 import tempfile
-from typing import Generator
-from unittest.mock import patch
+from collections.abc import Generator
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import database as app_database
@@ -28,29 +27,29 @@ def temp_dir() -> Generator[str, None, None]:
 @pytest.fixture(scope="session")
 def temp_data_dir(temp_dir: str) -> str:
     """Create temp data directory."""
-    data_dir = os.path.join(temp_dir, "data")
-    os.makedirs(data_dir, exist_ok=True)
-    return data_dir
+    data_dir = Path(temp_dir) / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return str(data_dir)
 
 
 @pytest.fixture(scope="session")
 def temp_import_dir(temp_dir: str) -> str:
     """Create temp import directory."""
-    import_dir = os.path.join(temp_dir, "import")
-    os.makedirs(import_dir, exist_ok=True)
-    return import_dir
+    import_dir = Path(temp_dir) / "import"
+    import_dir.mkdir(parents=True, exist_ok=True)
+    return str(import_dir)
 
 
 @pytest.fixture(scope="session")
 def temp_db_path(temp_data_dir: str) -> str:
     """Get path to temporary database."""
-    return os.path.join(temp_data_dir, "test_movies.db")
+    return str(Path(temp_data_dir) / "test_movies.db")
 
 
 @pytest.fixture(scope="session")
 def temp_source_db_path(temp_import_dir: str) -> str:
     """Get path to temporary source database."""
-    return os.path.join(temp_import_dir, "source_backup.sqlite3")
+    return str(Path(temp_import_dir) / "source_backup.sqlite3")
 
 
 @pytest.fixture(scope="session")
@@ -86,7 +85,9 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             "Test Movie 1",
             2000,
             8.5,
-            '{"detail": {"rating": {"count": 1000}, "pic": {"normal": "http://example.com/p1.jpg"}, "card_subtitle": "2000 / 美国 / 剧情 犯罪"}}',
+            '{"detail": {"rating": {"count": 1000}, '
+            '"pic": {"normal": "http://example.com/p1.jpg"}, '
+            '"card_subtitle": "2000 / 美国 / 剧情 犯罪"}}',
             "movie",
         ),
         (
@@ -95,7 +96,9 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             "Test Movie 2",
             2001,
             7.5,
-            '{"detail": {"rating": {"count": 500}, "pic": {"large": "http://example.com/p2.jpg"}, "card_subtitle": "2001 / 美国 / 喜剧"}}',
+            '{"detail": {"rating": {"count": 500}, '
+            '"pic": {"large": "http://example.com/p2.jpg"}, '
+            '"card_subtitle": "2001 / 美国 / 喜剧"}}',
             "movie",
         ),
         (
@@ -122,7 +125,9 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             "Test Movie 2",
             2001,
             7.5,
-            '{"detail": {"rating": {"count": 500}, "pic": {"large": "http://example.com/p2.jpg"}, "card_subtitle": "2001 / 喜剧"}}',
+            '{"detail": {"rating": {"count": 500}, '
+            '"pic": {"large": "http://example.com/p2.jpg"}, '
+            '"card_subtitle": "2001 / 喜剧"}}',
             "movie",
         ),
         (
@@ -158,13 +163,17 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             "土拨鼠之日",
             1993,
             8.6,
-            '{"detail": {"rating": {"count": 237672}, "cover_url": "https://example.com/cover.jpg", "card_subtitle": "1993 / 美国 / 剧情 喜剧 爱情 奇幻"}}',
+            '{"detail": {"rating": {"count": 237672}, '
+            '"cover_url": "https://example.com/cover.jpg", '
+            '"card_subtitle": "1993 / 美国 / 剧情 喜剧 爱情 奇幻"}}',
             "movie",
         ),
     ]
 
     cursor.executemany(
-        "INSERT OR REPLACE INTO item (douban_id, imdb_id, douban_title, year, rating, raw_data, type) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO item "
+        "(douban_id, imdb_id, douban_title, year, rating, raw_data, type) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
         test_movies,
     )
     source_db_connection.commit()
@@ -186,8 +195,8 @@ def test_engine(temp_db_path: str):
 @pytest.fixture
 def db_session(test_engine) -> Generator[Session, None, None]:
     """Create test database session."""
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
-    session = SessionLocal()
+    session_factory = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    session = session_factory()
     try:
         yield session
     finally:
@@ -198,7 +207,7 @@ def db_session(test_engine) -> Generator[Session, None, None]:
 def client(test_engine, db_session: Session) -> Generator[TestClient, None, None]:
     """Create test client with database override."""
     original_engine = app_database.engine
-    original_sessionmaker = app_database.SessionLocal
+    original_session_factory = app_database.SessionLocal
 
     app_database.engine = test_engine
     app_database.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
@@ -218,7 +227,7 @@ def client(test_engine, db_session: Session) -> Generator[TestClient, None, None
 
     app.dependency_overrides.clear()
     app_database.engine = original_engine
-    app_database.SessionLocal = original_sessionmaker
+    app_database.SessionLocal = original_session_factory
     app_import_service.engine = original_engine
 
 
@@ -305,7 +314,7 @@ def sample_movies(db_session: Session) -> list[Movie]:
         db_session.add(movie)
     db_session.commit()
 
-    for i, movie in enumerate(movies):
+    for movie in movies:
         db_session.refresh(movie)
 
     return movies

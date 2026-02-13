@@ -2,10 +2,9 @@
 
 import time
 
-import pytest
 from sqlalchemy import text
 
-from app.database import Movie, MovieGenre
+from app.database import Movie
 from app.services.import_service import ImportService
 
 
