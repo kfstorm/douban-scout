@@ -56,7 +56,7 @@ function App() {
             {/* Logo */}
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                Douban Movie Explorer
+                豆瓣影视探索
               </h1>
             </div>
 
@@ -114,7 +114,7 @@ function App() {
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-            Douban Movie Explorer - Built with FastAPI + React
+            豆瓣影视探索 - 基于 FastAPI + React 构建
           </p>
         </div>
       </footer>
