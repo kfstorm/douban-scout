@@ -39,9 +39,3 @@ wheels/
 *.swp
 *.swo
 *~
-
-# Data and import folders (keep structure but ignore files)
-/data/*
-!/data/.gitkeep
-/import/*
-!/import/.gitkeep

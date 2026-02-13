@@ -32,6 +32,10 @@ npm run build
 npm run preview
 ```
 
+## Environment Variables
+
+- `VITE_API_URL`: Backend API URL (default: `/api`)
+
 ## Code Style Guidelines
 
 ### Imports

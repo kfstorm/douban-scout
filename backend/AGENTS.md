@@ -40,6 +40,10 @@ PYTHONPATH=. uv run pytest tests/test_api.py::TestMoviesEndpoint::test_get_movie
 PYTHONPATH=. uv run pytest tests/test_api.py -v
 ```
 
+## Environment Variables
+
+- `DATABASE_URL`: SQLite connection string (default: `sqlite:///data/movies.db`)
+
 ## Code Style Guidelines
 
 ### Imports
@@ -165,6 +169,7 @@ backend/
 │   └── services/            # Business logic
 │       ├── movie_service.py
 │       └── import_service.py
+├── data/                    # SQLite database
 ├── scripts/                 # Dev scripts
 │   ├── lint.sh
 │   ├── format.sh
@@ -175,6 +180,5 @@ backend/
 │   └── test_services.py
 ├── pyproject.toml
 ├── uv.lock
-├── Dockerfile
 └── README.md
 ```
