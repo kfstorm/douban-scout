@@ -3,8 +3,6 @@
 import base64
 import json
 import logging
-from typing import ClassVar
-
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
@@ -16,41 +14,6 @@ logger = logging.getLogger("douban.movies")
 
 class MovieService:
     """Service for movie-related operations."""
-
-    VALID_GENRES: ClassVar[set[str]] = {
-        "剧情",
-        "喜剧",
-        "爱情",
-        "动作",
-        "惊悚",
-        "犯罪",
-        "恐怖",
-        "动画",
-        "纪录片",
-        "短片",
-        "悬疑",
-        "冒险",
-        "科幻",
-        "奇幻",
-        "家庭",
-        "音乐",
-        "历史",
-        "战争",
-        "歌舞",
-        "传记",
-        "古装",
-        "真人秀",
-        "同性",
-        "运动",
-        "西部",
-        "情色",
-        "儿童",
-        "武侠",
-        "脱口秀",
-        "黑色电影",
-        "戏曲",
-        "灾难",
-    }
 
     @staticmethod
     def get_movies(  # noqa: PLR0912, PLR0913
@@ -88,14 +51,10 @@ class MovieService:
 
         # AND logic for genres
         if genres:
-            valid_genres = [g for g in genres if g in MovieService.VALID_GENRES]
-            if valid_genres:
-                for genre in valid_genres:
-                    query = query.filter(
-                        Movie.id.in_(
-                            db.query(MovieGenre.movie_id).filter(MovieGenre.genre == genre)
-                        )
-                    )
+            for genre in genres:
+                query = query.filter(
+                    Movie.id.in_(db.query(MovieGenre.movie_id).filter(MovieGenre.genre == genre))
+                )
 
         # Get total count
         total = query.count()

@@ -190,15 +190,6 @@ class TestImportService:
 class TestMovieService:
     """Tests for MovieService."""
 
-    def test_valid_genres_constant(self):
-        """Test that VALID_GENRES contains expected genres."""
-        from app.services.movie_service import MovieService
-
-        assert "剧情" in MovieService.VALID_GENRES
-        assert "喜剧" in MovieService.VALID_GENRES
-        assert "动作" in MovieService.VALID_GENRES
-        assert len(MovieService.VALID_GENRES) == 32
-
     def test_get_movies_no_results_for_unmatched_genres(self, client, movies_with_genres: list):
         """Test that filtering by non-existent genre returns no results."""
         response = client.get("/api/movies?genres=武侠")
