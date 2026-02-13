@@ -18,42 +18,35 @@ export const MovieGrid: React.FC = () => {
     sortOrder,
   } = useFilterStore();
 
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    error,
-    refetch,
-  } = useInfiniteQuery({
-    queryKey: [
-      'movies',
-      type,
-      minRating,
-      maxRating,
-      minRatingCount,
-      selectedGenres,
-      searchQuery,
-      sortBy,
-      sortOrder,
-    ],
-    queryFn: ({ pageParam }) =>
-      moviesApi.getMovies({
-        cursor: pageParam,
-        limit: 20,
-        type: type || undefined,
-        min_rating: minRating > 0 ? minRating : undefined,
-        max_rating: maxRating < 10 ? maxRating : undefined,
-        min_rating_count: minRatingCount > 0 ? minRatingCount : undefined,
-        genres: selectedGenres.length > 0 ? selectedGenres : undefined,
-        search: searchQuery || undefined,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      }),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.next_cursor,
-  });
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error, refetch } =
+    useInfiniteQuery({
+      queryKey: [
+        'movies',
+        type,
+        minRating,
+        maxRating,
+        minRatingCount,
+        selectedGenres,
+        searchQuery,
+        sortBy,
+        sortOrder,
+      ],
+      queryFn: ({ pageParam }) =>
+        moviesApi.getMovies({
+          cursor: pageParam,
+          limit: 20,
+          type: type || undefined,
+          min_rating: minRating > 0 ? minRating : undefined,
+          max_rating: maxRating < 10 ? maxRating : undefined,
+          min_rating_count: minRatingCount > 0 ? minRatingCount : undefined,
+          genres: selectedGenres.length > 0 ? selectedGenres : undefined,
+          search: searchQuery || undefined,
+          sort_by: sortBy,
+          sort_order: sortOrder,
+        }),
+      initialPageParam: undefined as string | undefined,
+      getNextPageParam: (lastPage) => lastPage.next_cursor,
+    });
 
   const { loadMoreRef } = useInfiniteScroll({
     onLoadMore: fetchNextPage,
@@ -64,7 +57,17 @@ export const MovieGrid: React.FC = () => {
   // Refetch when filters change
   useEffect(() => {
     refetch();
-  }, [type, minRating, maxRating, minRatingCount, selectedGenres, searchQuery, sortBy, sortOrder, refetch]);
+  }, [
+    type,
+    minRating,
+    maxRating,
+    minRatingCount,
+    selectedGenres,
+    searchQuery,
+    sortBy,
+    sortOrder,
+    refetch,
+  ]);
 
   if (isLoading) {
     return (
@@ -117,7 +120,7 @@ export const MovieGrid: React.FC = () => {
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
         共找到 {total.toLocaleString()} 部作品
       </p>
-      
+
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {movies.map((movie: Movie) => (
           <MovieCard key={movie.id} movie={movie} />

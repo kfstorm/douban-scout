@@ -31,13 +31,13 @@ export function useInfiniteScroll({
               onLoadMore();
             }
           },
-          { rootMargin: `${threshold}px` }
+          { rootMargin: `${threshold}px` },
         );
 
         observerRef.current.observe(node);
       }
     },
-    [onLoadMore, hasMore, isLoading, threshold]
+    [onLoadMore, hasMore, isLoading, threshold],
   );
 
   useEffect(() => {

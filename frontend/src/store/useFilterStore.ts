@@ -10,7 +10,7 @@ export interface FilterState {
   searchQuery: string;
   sortBy: 'rating' | 'rating_count' | 'year';
   sortOrder: 'asc' | 'desc';
-  
+
   // Actions
   setType: (type: 'movie' | 'tv' | null) => void;
   setMinRating: (rating: number) => void;
@@ -39,33 +39,34 @@ export const useFilterStore = create<FilterState>()(
   persist(
     (set) => ({
       ...initialState,
-      
+
       setType: (type) => set({ type }),
-      
+
       setMinRating: (minRating) => set({ minRating }),
-      
+
       setMaxRating: (maxRating) => set({ maxRating }),
-      
+
       setMinRatingCount: (minRatingCount) => set({ minRatingCount }),
-      
-      toggleGenre: (genre) => set((state) => ({
-        selectedGenres: state.selectedGenres.includes(genre)
-          ? state.selectedGenres.filter((g) => g !== genre)
-          : [...state.selectedGenres, genre],
-      })),
-      
+
+      toggleGenre: (genre) =>
+        set((state) => ({
+          selectedGenres: state.selectedGenres.includes(genre)
+            ? state.selectedGenres.filter((g) => g !== genre)
+            : [...state.selectedGenres, genre],
+        })),
+
       clearGenres: () => set({ selectedGenres: [] }),
-      
+
       setSearchQuery: (searchQuery) => set({ searchQuery }),
-      
+
       setSortBy: (sortBy) => set({ sortBy }),
-      
+
       setSortOrder: (sortOrder) => set({ sortOrder }),
-      
+
       resetFilters: () => set(initialState),
     }),
     {
       name: 'douban-filters',
-    }
-  )
+    },
+  ),
 );

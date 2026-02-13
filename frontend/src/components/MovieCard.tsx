@@ -38,20 +38,22 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
             (e.target as HTMLImageElement).style.display = 'none';
           }}
         />
-        
+
         {/* Rating badge */}
         {movie.rating && (
-          <div className={`absolute top-2 right-2 ${getRatingColor(movie.rating)} text-white text-sm font-bold px-2 py-1 rounded`}>
+          <div
+            className={`absolute top-2 right-2 ${getRatingColor(movie.rating)} text-white text-sm font-bold px-2 py-1 rounded`}
+          >
             {movie.rating.toFixed(1)}
           </div>
         )}
       </div>
-      
+
       <div className="p-4">
         <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
           {movie.title}
         </h3>
-        
+
         <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
           <span>{movie.year || 'N/A'}</span>
           <span className="flex items-center gap-1">
@@ -61,7 +63,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
             {formatCount(movie.rating_count)}
           </span>
         </div>
-        
+
         {/* Genres */}
         {movie.genres.length > 0 && (
           <div className="flex flex-wrap gap-1">

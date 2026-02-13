@@ -1,0 +1,9 @@
+config:
+  MD013: false
+  MD033: false # Allow HTML for specific components if needed
+  MD041: false # Allow non-h1 first line
+globs:
+  - "**/*.md"
+  - "!**/node_modules/**"
+  - "!**/venv/**"
+  - "!**/.pytest_cache/**"

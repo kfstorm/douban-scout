@@ -108,18 +108,28 @@ export function MovieCard({ movie, onClick }: MovieCardProps) {
 - No test framework configured yet
 - If adding tests, use Vitest or Jest with React Testing Library
 
-## Type Checking
+## Type Checking & Linting
 
 ```bash
-# Type check (runs as part of build)
-npm run build
+# Type check
+npm run typecheck
 
-# No ESLint configured yet
+# Lint with ESLint
+npm run lint
+
+# Auto-fix linting issues
+npm run lint:fix
+
+# Format with Prettier
+npm run format
+
+# Check formatting
+npm run format:check
 ```
 
 ## File Structure
 
-```
+```text
 frontend/
 ├── src/
 │   ├── components/          # React components
@@ -146,7 +156,7 @@ frontend/
 
 - **No English text**: All user-facing text must be in Chinese
 - **Use inclusive terms**: The app covers both movies and TV shows
-  - Use "作品" or "影视" instead of "电影" 
+  - Use "作品" or "影视" instead of "电影"
   - Use "电视节目" instead of "电视剧"
 - Examples:
   - ✓ 搜索作品标题... / 共找到 100 部作品

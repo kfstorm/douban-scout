@@ -41,16 +41,17 @@ export const ImportStatusBanner: React.FC<ImportStatusProps> = ({ status }) => {
           <p className="font-medium">{getStatusText()}</p>
           {status.status === 'running' && (
             <p className="text-sm mt-1">
-              已处理: {status.processed.toLocaleString()} / {status.total.toLocaleString()} ({status.percentage.toFixed(1)}%)
+              已处理: {status.processed.toLocaleString()} / {status.total.toLocaleString()} (
+              {status.percentage.toFixed(1)}%)
             </p>
           )}
         </div>
-        
+
         {status.status === 'running' && (
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-current" />
         )}
       </div>
-      
+
       {status.status === 'running' && (
         <div className="mt-3 w-full bg-white dark:bg-gray-700 rounded-full h-2">
           <div

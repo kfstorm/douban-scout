@@ -23,6 +23,7 @@ A modern web application for exploring Douban movies and TV shows with powerful 
 ## Quick Start
 
 ### 1. Start Backend
+
 ```bash
 cd backend
 uv sync
@@ -30,6 +31,7 @@ uv run uvicorn app.main:app --reload
 ```
 
 ### 2. Start Frontend
+
 ```bash
 cd frontend
 npm install
@@ -37,11 +39,14 @@ npm run dev
 ```
 
 ### 3. Access the application
-- Web UI: http://localhost:3000
-- API Docs: http://localhost:8000/docs
+
+- Web UI: <http://localhost:3000>
+- API Docs: <http://localhost:8000/docs>
 
 ### 4. Import your data
+
 Trigger import via API by providing the absolute path to your Douban backup SQLite file:
+
 ```bash
 curl -X POST http://localhost:8000/api/import \
   -H "Content-Type: application/json" \
@@ -49,6 +54,7 @@ curl -X POST http://localhost:8000/api/import \
 ```
 
 Check progress:
+
 ```bash
 curl http://localhost:8000/api/import/status
 ```
@@ -56,6 +62,7 @@ curl http://localhost:8000/api/import/status
 ## Data Import
 
 The application supports importing from Douban backup SQLite files at runtime.
+
 - **Async Process**: Import runs in the background.
 - **Clean Slate**: Existing data is replaced.
 - **Performance**: Optimized for large datasets (e.g., 700k+ records).

@@ -29,9 +29,9 @@ uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 DATABASE_URL=sqlite:///data/movies.db uv run uvicorn app.main:app --reload
 
 # Lint and format
-bash scripts/lint.sh      # ruff check + mypy
-bash scripts/format.sh    # auto-format with ruff
-bash scripts/test.sh      # run all tests
+scripts/lint.sh      # ruff check + mypy
+scripts/format.sh    # auto-format with ruff
+scripts/test.sh      # run all tests
 
 # Single test
 PYTHONPATH=. uv run pytest tests/test_api.py::TestMoviesEndpoint::test_get_movies_with_data -v
@@ -155,7 +155,7 @@ Rules enabled: E, W, F, I, N, D (google), UP, B, C4, SIM, PTH, PL, PERF, RUF
 
 ## File Structure
 
-```
+```text
 backend/
 ├── app/
 │   ├── __init__.py

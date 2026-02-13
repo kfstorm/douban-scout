@@ -37,7 +37,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const FilterContent = () => (
+  const content = (
     <div className="space-y-6">
       {/* Type Filter */}
       <div>
@@ -87,8 +87,11 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
         </div>
         <div className="flex items-center gap-4">
           <div className="flex-1">
-            <label className="text-xs text-gray-600 dark:text-gray-400">最低</label>
+            <label htmlFor="min-rating" className="text-xs text-gray-600 dark:text-gray-400">
+              最低
+            </label>
             <input
+              id="min-rating"
               type="number"
               min="0"
               max="10"
@@ -100,8 +103,11 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
           </div>
           <span className="text-gray-400">-</span>
           <div className="flex-1">
-            <label className="text-xs text-gray-600 dark:text-gray-400">最高</label>
+            <label htmlFor="max-rating" className="text-xs text-gray-600 dark:text-gray-400">
+              最高
+            </label>
             <input
+              id="max-rating"
               type="number"
               min="0"
               max="10"
@@ -116,8 +122,14 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
 
       {/* Rating Count */}
       <div>
-        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">最低评分人数</h3>
+        <label
+          htmlFor="min-rating-count"
+          className="block text-sm font-medium text-gray-900 dark:text-white mb-3"
+        >
+          最低评分人数
+        </label>
         <input
+          id="min-rating-count"
           type="number"
           min="0"
           step="1000"
@@ -129,11 +141,17 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
 
       {/* Sort */}
       <div>
-        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">排序</h3>
+        <label
+          htmlFor="sort-by"
+          className="block text-sm font-medium text-gray-900 dark:text-white mb-3"
+        >
+          排序
+        </label>
         <div className="flex gap-2">
           <select
+            id="sort-by"
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => setSortBy(e.target.value as 'rating' | 'rating_count' | 'year')}
             className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
             <option value="rating">评分</option>
@@ -206,7 +224,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
       {/* Mobile Drawer */}
       <Dialog open={isOpen} onClose={onClose} className="lg:hidden relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        
+
         <div className="fixed inset-0 flex justify-end">
           <Dialog.Panel className="w-full max-w-sm bg-white dark:bg-gray-900 h-full p-6 overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
@@ -221,8 +239,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
                 <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
-            
-            <FilterContent />
+
+            {content}
           </Dialog.Panel>
         </div>
       </Dialog>
@@ -234,8 +252,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
             <FunnelIcon className="w-5 h-5" />
             筛选
           </h2>
-          
-          <FilterContent />
+
+          {content}
         </div>
       </aside>
     </>

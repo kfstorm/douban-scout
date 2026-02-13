@@ -47,7 +47,7 @@ uv run pytest tests/ -v
 
 ## Project Structure
 
-```
+```text
 backend/
 ├── app/
 │   ├── __init__.py
@@ -74,6 +74,7 @@ backend/
 ### Ruff (Linter & Formatter)
 
 Configured in `pyproject.toml`:
+
 - **Target Python version**: 3.11+
 - **Line length**: 100 characters
 - **Enabled rules**: E, W, F, I, N, D, UP, B, C4, SIM, PTH, PL, PERF, RUF
@@ -82,6 +83,7 @@ Configured in `pyproject.toml`:
 ### MyPy (Type Checker)
 
 Configured in `pyproject.toml`:
+
 - **Strict mode enabled**: All functions must have type annotations
 - **Missing imports ignored**: For third-party libraries without stubs
 
@@ -107,6 +109,7 @@ Before committing, run:
 ```
 
 This ensures:
+
 - Code is properly formatted
 - No linting errors
 - Type checking passes
