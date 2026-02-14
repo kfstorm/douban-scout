@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session, sessionmaker
 from app import database as app_database
 from app.database import Base, Movie, MovieGenre, get_db
 from app.main import app
-from app.services import import_service as app_import_service
 from app.services.import_service import ImportService
 
 
@@ -147,6 +146,17 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             1612985849.0,
         ),
         (
+            "1449961",
+            "tt0365559",
+            "涅槃纽约不插电演唱会",
+            1993,
+            9.7,
+            '{"detail": {"rating": {"count": 10308}, '
+            '"subtitle": "1993 / 美国 / 纪录片 音乐 / Beth McCarthy-Miller"}}',
+            "movie",
+            1612985849.0,
+        ),
+        (
             "9999",
             None,
             None,
@@ -210,8 +220,6 @@ def client(test_engine, db_session: Session) -> Generator[TestClient, None, None
     app_database.engine = test_engine
     app_database.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
-    app_import_service.engine = test_engine
-
     def override_get_db():
         try:
             yield db_session
@@ -226,7 +234,6 @@ def client(test_engine, db_session: Session) -> Generator[TestClient, None, None
     app.dependency_overrides.clear()
     app_database.engine = original_engine
     app_database.SessionLocal = original_session_factory
-    app_import_service.engine = original_engine
 
 
 @pytest.fixture(autouse=True)

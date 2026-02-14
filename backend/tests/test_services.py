@@ -46,17 +46,17 @@ class TestImportService:
         final_response = client.get("/api/import/status")
         final_status = final_response.json()
         assert final_status["status"] == "completed"
-        assert final_status["processed"] == 6
+        assert final_status["processed"] == 7
         assert final_status["percentage"] == 100.0
 
         db_session.expire_all()
         result = db_session.execute(text("SELECT COUNT(*) FROM movies"))
         count = result.scalar()
-        assert count == 6
+        assert count == 7
 
         genre_result = db_session.execute(text("SELECT COUNT(*) FROM movie_genres"))
         genre_count = genre_result.scalar()
-        assert genre_count == 10
+        assert genre_count == 12
 
     def test_import_clears_existing_data(
         self, client, sample_movies, populated_source_db, temp_source_db_path: str, db_session
@@ -79,7 +79,7 @@ class TestImportService:
 
         db_session.expire_all()
         final_count = db_session.query(Movie).count()
-        assert final_count == 6
+        assert final_count == 7
 
     def test_import_extracts_genres_correctly(
         self, client, populated_source_db, temp_source_db_path: str, db_session
@@ -100,6 +100,27 @@ class TestImportService:
         assert movie is not None
         assert "剧情" in [g.genre for g in movie.genres]
         assert "犯罪" in [g.genre for g in movie.genres]
+
+    def test_import_extracts_genres_from_subtitle(
+        self, client, populated_source_db, temp_source_db_path: str, db_session
+    ):
+        """Test that genres are extracted correctly from subtitle fallback."""
+        ImportService._instance = None
+        client.post("/api/import", json={"source_path": temp_source_db_path})
+
+        for _ in range(50):
+            time.sleep(0.2)
+            status_response = client.get("/api/import/status")
+            status = status_response.json()
+            if status["status"] == "completed":
+                break
+
+        db_session.expire_all()
+        movie = db_session.query(Movie).filter(Movie.douban_id == "1449961").first()
+        assert movie is not None
+        genres = [g.genre for g in movie.genres]
+        assert "纪录片" in genres
+        assert "音乐" in genres
 
     def test_import_extracts_rating_count(
         self, client, populated_source_db, temp_source_db_path: str, db_session

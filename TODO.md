@@ -1,7 +1,6 @@
 - API Throttling
 - Add import service API authentication. if auth info not provided, import API should always reject the request.
-- [涅槃纽约不插电演唱会](https://movie.douban.com/subject/1449961/) has no genres.
 - Year range filter
 - filter/sorting condition in URL query params, so that users can share specific views
 - some items still have no poster image
-- API performance
+- API performance && DB size (schema optimization, indexing, etc.)

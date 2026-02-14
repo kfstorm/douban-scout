@@ -178,8 +178,10 @@ class ImportService:
                                     if not poster_url:
                                         poster_url = detail.get("cover_url")
 
-                                    # Extract genres from card_subtitle by checking all tokens
-                                    card_subtitle = detail.get("card_subtitle", "")
+                                    # Extract genres from card_subtitle or subtitle
+                                    card_subtitle = detail.get("card_subtitle") or detail.get(
+                                        "subtitle", ""
+                                    )
                                     if card_subtitle:
                                         # card_subtitle example: "2000 / 美国 / 剧情 喜剧"
                                         # Split by any whitespace and "/" to get genre tokens
