@@ -47,8 +47,8 @@ class TestMoviesEndpoint:
         assert data["total"] == 6
 
     def test_get_movies_limit_max_validation(self, client: TestClient):
-        """Test limit cannot exceed 100."""
-        response = client.get("/api/movies?limit=200")
+        """Test limit cannot exceed 20."""
+        response = client.get("/api/movies?limit=21")
         assert response.status_code == 422
 
     def test_get_movies_limit_min_validation(self, client: TestClient):

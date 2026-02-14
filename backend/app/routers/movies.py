@@ -24,7 +24,7 @@ router = APIRouter(prefix="/movies", tags=["movies"])
 def get_movies(  # noqa: PLR0913
     request: Request,
     cursor: str | None = Query(None, description="Cursor for pagination"),
-    limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    limit: int = Query(20, ge=1, le=20, description="Number of items per page"),
     type: Literal["movie", "tv"] | None = Query(None, description="Filter by type"),
     min_rating: float | None = Query(None, ge=0, le=10, description="Minimum rating"),
     max_rating: float | None = Query(None, ge=0, le=10, description="Maximum rating"),
