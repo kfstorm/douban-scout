@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UsersIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { PosterImage } from './PosterImage';
 import type { Movie } from '../types/movie';
@@ -8,6 +8,8 @@ interface MovieCardProps {
 }
 
 export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
+  const [showInfo, setShowInfo] = useState(false);
+
   const getRatingColor = (rating: number | null) => {
     if (!rating) return 'bg-gray-400';
     if (rating >= 9) return 'bg-green-500';
@@ -43,12 +45,19 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
   const doubanUrl = `https://movie.douban.com/subject/${movie.id}/`;
 
+  const toggleInfo = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowInfo(!showInfo);
+  };
+
   return (
     <a
       href={doubanUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="group block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 relative"
+      onMouseLeave={() => setShowInfo(false)}
     >
       <div className="aspect-[2/3] relative rounded-t-lg">
         <PosterImage
@@ -65,10 +74,27 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         </div>
       </div>
 
-      {/* Info icon with tooltip - Moved outside overflow-hidden container */}
-      <div className="absolute top-2 left-2 group/info z-30">
-        <InformationCircleIcon className="w-5 h-5 text-white/70 hover:text-white drop-shadow-md transition-colors cursor-help" />
-        <div className="absolute left-0 top-6 w-max max-w-[180px] p-2 bg-gray-900/95 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all pointer-events-none">
+      {/* Info icon with tooltip - Improved for mobile */}
+      <div
+        className="absolute top-0 left-0 p-3 z-30 group/info outline-none"
+        onClick={toggleInfo}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            toggleInfo(e);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="查看详情"
+      >
+        <InformationCircleIcon className="w-6 h-6 text-white/90 hover:text-white drop-shadow-lg transition-colors cursor-help" />
+        <div
+          className={`absolute left-2 top-10 w-max max-w-[180px] p-2 bg-gray-900/95 text-white text-xs rounded shadow-lg transition-all pointer-events-none ${
+            showInfo
+              ? 'opacity-100 visible'
+              : 'opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible'
+          }`}
+        >
           <div className="mb-1 font-semibold border-b border-white/20 pb-1">作品详情</div>
           <div className="text-gray-300 mt-1">数据更新时间: {timeAgo(movie.updated_at)}</div>
           <div className="text-gray-300 mt-1">评分人数: {movie.rating_count.toLocaleString()}</div>
