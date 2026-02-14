@@ -76,7 +76,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
       {/* Info icon with tooltip - Improved for mobile */}
       <div
-        className="absolute top-0 left-0 p-3 z-30 group/info outline-none"
+        className="absolute top-0 left-0 p-2 z-30 group/info outline-none"
         onClick={toggleInfo}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -87,9 +87,11 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         tabIndex={0}
         aria-label="查看详情"
       >
-        <InformationCircleIcon className="w-6 h-6 text-white/90 hover:text-white drop-shadow-lg transition-colors cursor-help" />
+        <div className="bg-black/20 dark:bg-black/40 backdrop-blur-sm rounded-full p-1 shadow-md transition-colors group-hover/info:bg-black/40 dark:group-hover/info:bg-black/60">
+          <InformationCircleIcon className="w-5 h-5 text-white/90 group-hover/info:text-white transition-colors cursor-help" />
+        </div>
         <div
-          className={`absolute left-0 top-10 w-max max-w-[160px] sm:max-w-[180px] p-2 bg-gray-900/95 text-white text-xs rounded shadow-lg transition-all pointer-events-none ${
+          className={`absolute left-0 top-12 w-max max-w-[160px] sm:max-w-[180px] p-2 bg-gray-900/95 text-white text-xs rounded shadow-lg transition-all pointer-events-none ${
             showInfo
               ? 'opacity-100 visible'
               : 'opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible'
