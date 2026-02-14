@@ -181,13 +181,6 @@ class ImportService:
                                     if cover_url:
                                         poster_urls.add(cover_url)
 
-                                    # Extract from photos list
-                                    photos = detail.get("photos", [])
-                                    if isinstance(photos, list):
-                                        for photo_url in photos:
-                                            if isinstance(photo_url, str):
-                                                poster_urls.add(photo_url)
-
                                     # Extract genres from card_subtitle or subtitle
                                     card_subtitle = detail.get("card_subtitle") or detail.get(
                                         "subtitle", ""

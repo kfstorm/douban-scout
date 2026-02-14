@@ -152,7 +152,8 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             1993,
             9.7,
             '{"detail": {"rating": {"count": 10308}, '
-            '"subtitle": "1993 / 美国 / 纪录片 音乐 / Beth McCarthy-Miller"}}',
+            '"subtitle": "1993 / 美国 / 纪录片 音乐 / Beth McCarthy-Miller", '
+            '"photos": ["https://example.com/photo1.jpg", "https://example.com/photo2.jpg"]}}',
             "movie",
             1612985849.0,
         ),

@@ -1,4 +1,3 @@
 - API Throttling
 - Add import service API authentication. if auth info not provided, import API should always reject the request.
-- some items still have no poster image
 - API performance && DB size (schema optimization, indexing, etc.)
