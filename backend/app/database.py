@@ -112,7 +112,11 @@ def sqlite_creator() -> sqlite3.Connection:
         raise sqlite3.OperationalError(f"Database file not found at {path}")
 
     # Use URI mode explicitly
-    return sqlite3.connect(f"file:{path}?mode=ro" if "mode=ro" in DATABASE_URL else path, uri=True)
+    return sqlite3.connect(
+        f"file:{path}?mode=ro" if "mode=ro" in DATABASE_URL else path,
+        uri=True,
+        check_same_thread=False,
+    )
 
 
 engine = create_engine(
