@@ -97,7 +97,7 @@ class TestImportService:
                 break
 
         db_session.expire_all()
-        movie = db_session.query(Movie).filter(Movie.douban_id == "1001").first()
+        movie = db_session.query(Movie).filter(Movie.id == 1001).first()
         assert movie is not None
         genres = [g.genre_obj.name for g in movie.genres]
         assert "剧情" in genres
@@ -118,7 +118,7 @@ class TestImportService:
                 break
 
         db_session.expire_all()
-        movie = db_session.query(Movie).filter(Movie.douban_id == "1449961").first()
+        movie = db_session.query(Movie).filter(Movie.id == 1449961).first()
         assert movie is not None
         genres = [g.genre_obj.name for g in movie.genres]
         assert "纪录片" in genres
@@ -139,7 +139,7 @@ class TestImportService:
                 break
 
         db_session.expire_all()
-        movie = db_session.query(Movie).filter(Movie.douban_id == "1001").first()
+        movie = db_session.query(Movie).filter(Movie.id == 1001).first()
         assert movie is not None
         assert movie.rating_count == 1000
 
@@ -158,11 +158,11 @@ class TestImportService:
                 break
 
         db_session.expire_all()
-        movie1 = db_session.query(Movie).filter(Movie.douban_id == "1001").first()
+        movie1 = db_session.query(Movie).filter(Movie.id == 1001).first()
         assert movie1 is not None
         assert "http://example.com/p1.jpg" in [p.url for p in movie1.posters]
 
-        movie2 = db_session.query(Movie).filter(Movie.douban_id == "1002").first()
+        movie2 = db_session.query(Movie).filter(Movie.id == 1002).first()
         assert movie2 is not None
         assert "http://example.com/p2.jpg" in [p.url for p in movie2.posters]
 
@@ -181,7 +181,7 @@ class TestImportService:
                 break
 
         db_session.expire_all()
-        movie = db_session.query(Movie).filter(Movie.douban_id == "1004").first()
+        movie = db_session.query(Movie).filter(Movie.id == 1004).first()
         assert movie is not None
         assert movie.rating is None
 
@@ -200,7 +200,7 @@ class TestImportService:
                 break
 
         db_session.expire_all()
-        movie = db_session.query(Movie).filter(Movie.douban_id == "1005").first()
+        movie = db_session.query(Movie).filter(Movie.id == 1005).first()
         assert movie is not None
         assert movie.rating_count == 0
         assert len(movie.posters) == 0
@@ -221,7 +221,7 @@ class TestImportService:
                 break
 
         db_session.expire_all()
-        movie = db_session.query(Movie).filter(Movie.douban_id == "1300613").first()
+        movie = db_session.query(Movie).filter(Movie.id == 1300613).first()
         assert movie is not None
         assert "https://example.com/cover.jpg" in [p.url for p in movie.posters]
 
@@ -273,7 +273,7 @@ class TestImportService:
                 break
 
         db_session.expire_all()
-        movie = db_session.query(Movie).filter(Movie.douban_id == "1449961").first()
+        movie = db_session.query(Movie).filter(Movie.id == 1449961).first()
         assert movie is not None
         # Should have 0 posters because 'pic' and 'cover_url' are missing,
         # and 'photos' should be ignored.

@@ -174,7 +174,7 @@ class ImportService:
                     try:
                         (
                             douban_id,
-                            imdb_id,
+                            _,
                             title,
                             year,
                             rating,
@@ -226,18 +226,14 @@ class ImportService:
                                     f"Failed to parse raw_data for douban_id {douban_id}: {e}"
                                 )
 
-                        # Build douban_url
-                        douban_url = f"https://movie.douban.com/subject/{douban_id}/"
-
+                        # Build movie dictionary
                         movie = {
-                            "douban_id": douban_id,
-                            "imdb_id": imdb_id,
+                            "id": int(douban_id),
                             "title": title or "",
                             "year": year,
                             "rating": rating,
                             "rating_count": rating_count,
                             "type": item_type,
-                            "douban_url": douban_url,
                             "genre_ids": [genre_map[gn] for gn in movie_genre_names],
                             "posters": list(poster_urls),
                             "updated_at": int(update_time) if update_time else None,

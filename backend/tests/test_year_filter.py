@@ -10,10 +10,10 @@ def test_get_movies_filter_by_year_range(client: TestClient, db_session: Session
     """Test filtering movies by year range."""
     # Add movies with different years and one with NULL year
     movies = [
-        Movie(douban_id="y1", title="1990 Movie", year=1990, type="movie", douban_url="h1"),
-        Movie(douban_id="y2", title="2000 Movie", year=2000, type="movie", douban_url="h2"),
-        Movie(douban_id="y3", title="2010 Movie", year=2010, type="movie", douban_url="h3"),
-        Movie(douban_id="y4", title="No Year Movie", year=None, type="movie", douban_url="h4"),
+        Movie(id=1, title="1990 Movie", year=1990, type="movie"),
+        Movie(id=2, title="2000 Movie", year=2000, type="movie"),
+        Movie(id=3, title="2010 Movie", year=2010, type="movie"),
+        Movie(id=4, title="No Year Movie", year=None, type="movie"),
     ]
     for m in movies:
         db_session.add(m)

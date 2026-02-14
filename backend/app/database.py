@@ -14,7 +14,6 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
-    Text,
     create_engine,
     event,
 )
@@ -29,15 +28,12 @@ class Movie(Base):  # type: ignore[misc, valid-type]
 
     __tablename__ = "movies"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    douban_id = Column(String(16), unique=True, nullable=False, index=True)
-    imdb_id = Column(String(16), nullable=True)
+    id = Column(Integer, primary_key=True)
     title = Column(String(256), nullable=False)
     year = Column(Integer, nullable=True, index=True)
     rating = Column(Float, nullable=True, index=True)
     rating_count = Column(Integer, default=0, index=True)
     type = Column(String(16), nullable=False, index=True)
-    douban_url = Column(Text, nullable=False)
     updated_at = Column(Integer, nullable=True)
 
     genres = relationship("MovieGenre", back_populates="movie", cascade="all, delete-orphan")  # type: ignore[var-annotated]

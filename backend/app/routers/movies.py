@@ -92,18 +92,18 @@ def _get_poster_candidates(base_urls: list[str]) -> list[str]:
     return all_candidates
 
 
-@router.get("/{douban_id}/poster")
+@router.get("/{id}/poster")
 async def get_poster(
-    douban_id: str,
+    id: int,
     db: Session = Depends(get_db),  # noqa: B008
 ) -> StreamingResponse:
     """Proxy poster images from Douban to bypass CORS restrictions.
 
-    Fetches poster URLs from the database for the given douban_id,
+    Fetches poster URLs from the database for the given id,
     then proxies the first working image from Douban's CDN.
     """
     # Fetch movie and all poster URLs from database
-    movie = db.query(Movie).filter(Movie.douban_id == douban_id).first()
+    movie = db.query(Movie).filter(Movie.id == id).first()
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
 

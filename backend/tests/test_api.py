@@ -342,11 +342,10 @@ class TestMoviesEndpoint:
         # Create 10 movies with identical rating_count
         for i in range(1, 11):
             movie = Movie(
-                douban_id=f"movie_{i}",
+                id=i + 10000,
                 title=f"Movie {i}",
                 rating_count=1000,
                 type="movie",
-                douban_url=f"https://movie.douban.com/subject/{i}/",
             )
             db_session.add(movie)
         db_session.commit()

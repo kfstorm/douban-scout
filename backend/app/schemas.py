@@ -9,21 +9,18 @@ from pydantic import BaseModel
 class MovieBase(BaseModel):
     """Base movie schema with common fields."""
 
-    douban_id: str
-    imdb_id: str | None = None
+    id: int
     title: str
     year: int | None = None
     rating: float | None = None
     rating_count: int = 0
     type: Literal["movie", "tv"]
-    douban_url: str
     genres: list[str] = []
 
 
 class MovieResponse(MovieBase):
     """Movie response schema with additional fields."""
 
-    id: int
     updated_at: int | None = None
 
     class Config:

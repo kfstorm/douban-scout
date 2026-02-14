@@ -170,14 +170,11 @@ class MovieService:
             movie_responses.append(
                 MovieResponse(
                     id=movie.id,
-                    douban_id=movie.douban_id,
-                    imdb_id=movie.imdb_id,
                     title=movie.title,
                     year=movie.year,
                     rating=movie.rating,
                     rating_count=movie.rating_count,
                     type=movie.type,
-                    douban_url=movie.douban_url,
                     genres=movie_genres,
                     updated_at=movie.updated_at,
                 )
