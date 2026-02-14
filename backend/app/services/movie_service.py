@@ -8,8 +8,14 @@ from sqlalchemy import func, text
 from sqlalchemy.orm import Query, Session, selectinload
 
 from app.cache import cached
-from app.database import Genre, Movie, MovieGenre
-from app.schemas import GenreCount, MovieResponse, MoviesListResponse, StatsResponse
+from app.database import Genre, Movie, MovieGenre, MovieRegion, Region
+from app.schemas import (
+    GenreCount,
+    MovieResponse,
+    MoviesListResponse,
+    RegionCount,
+    StatsResponse,
+)
 
 logger = logging.getLogger("douban.movies")
 
@@ -32,6 +38,7 @@ class MovieService:
         max_year: int | None = None,
         genres: list[str] | None = None,
         exclude_genres: list[str] | None = None,
+        regions: list[str] | None = None,
         search: str | None = None,
         sort_by: str = "rating",
         sort_order: str = "desc",
@@ -52,6 +59,7 @@ class MovieService:
             max_year=max_year,
             genres=genres,
             exclude_genres=exclude_genres,
+            regions=regions,
             search=search,
         )
 
@@ -66,11 +74,15 @@ class MovieService:
             max_year=max_year,
             genres=genres,
             exclude_genres=exclude_genres,
+            regions=regions,
             search=search,
         )
 
-        # Eager load genres to avoid N+1
-        query = query.options(selectinload(Movie.genres).selectinload(MovieGenre.genre_obj))
+        # Eager load genres and regions to avoid N+1
+        query = query.options(
+            selectinload(Movie.genres).selectinload(MovieGenre.genre_obj),
+            selectinload(Movie.regions).selectinload(MovieRegion.region_obj),
+        )
 
         # Cursor-based pagination
         if cursor:
@@ -121,6 +133,7 @@ class MovieService:
         for movie in items:
             # Map normalized genres back to list of strings
             movie_genres: list[str] = [g.genre_obj.name for g in movie.genres]
+            movie_regions: list[str] = [r.region_obj.name for r in movie.regions]
             movie_responses.append(
                 MovieResponse(
                     id=movie.id,
@@ -130,6 +143,7 @@ class MovieService:
                     rating_count=movie.rating_count,
                     type=movie.type,
                     genres=movie_genres,
+                    regions=movie_regions,
                     updated_at=movie.updated_at,
                 )
             )
@@ -160,6 +174,23 @@ class MovieService:
 
         return [GenreCount(genre=r[0], count=r[1]) for r in results]
 
+    @cached(prefix="regions")
+    def get_regions(self, db: Session, type: str | None = None) -> list[RegionCount]:
+        """Get all regions with counts."""
+        logger.debug(f"Querying regions with type filter: {type}")
+        query = db.query(Region.name, func.count(MovieRegion.movie_id).label("count")).join(
+            Region.movie_associations
+        )
+
+        if type:
+            query = query.join(MovieRegion.movie).filter(Movie.type == type)
+
+        results = (
+            query.group_by(Region.name).order_by(func.count(MovieRegion.movie_id).desc()).all()
+        )
+
+        return [RegionCount(region=r[0], count=r[1]) for r in results]
+
     @cached(prefix="stats")
     def get_stats(self, db: Session) -> StatsResponse:
         """Get database statistics."""
@@ -168,13 +199,18 @@ class MovieService:
         total_tv = db.query(Movie).filter(Movie.type == "tv").count()
         avg_rating = db.query(func.avg(Movie.rating)).scalar() or 0.0
         total_genres = db.query(Genre).count()
+        total_regions = db.query(Region).count()
 
-        logger.info(f"Stats: {total_movies} movies, {total_tv} TV shows, {total_genres} genres")
+        logger.info(
+            f"Stats: {total_movies} movies, {total_tv} TV shows, "
+            f"{total_genres} genres, {total_regions} regions"
+        )
         return StatsResponse(
             total_movies=total_movies,
             total_tv=total_tv,
             avg_rating=round(avg_rating, 2),
             total_genres=total_genres,
+            total_regions=total_regions,
         )
 
     def _apply_filters(  # noqa: PLR0913
@@ -188,6 +224,7 @@ class MovieService:
         max_year: int | None = None,
         genres: list[str] | None = None,
         exclude_genres: list[str] | None = None,
+        regions: list[str] | None = None,
         search: str | None = None,
     ) -> Query:
         """Apply filters to a movie query."""
@@ -205,6 +242,19 @@ class MovieService:
         if type:
             query = query.filter(Movie.type == type)
 
+        if min_rating_count is not None:
+            query = query.filter(Movie.rating_count >= min_rating_count)
+
+        query = self._apply_rating_range(query, min_rating, max_rating)
+        query = self._apply_year_range(query, min_year, max_year)
+        query = self._apply_genre_and_region_filters(db, query, genres, exclude_genres, regions)
+
+        return query
+
+    def _apply_rating_range(
+        self, query: Query, min_rating: float | None, max_rating: float | None
+    ) -> Query:
+        """Apply rating range filters."""
         effective_min = min_rating if min_rating is not None else 0
         effective_max = max_rating if max_rating is not None else MAX_RATING
 
@@ -215,10 +265,10 @@ class MovieService:
             query = query.filter(
                 ((Movie.rating >= 0) & (Movie.rating <= effective_max)) | (Movie.rating.is_(None))
             )
+        return query
 
-        if min_rating_count is not None:
-            query = query.filter(Movie.rating_count >= min_rating_count)
-
+    def _apply_year_range(self, query: Query, min_year: int | None, max_year: int | None) -> Query:
+        """Apply year range filters."""
         if min_year is not None:
             query = query.filter(Movie.year.isnot(None))
             if max_year is not None:
@@ -227,12 +277,31 @@ class MovieService:
                 query = query.filter(Movie.year >= min_year)
         elif max_year is not None:
             query = query.filter((Movie.year <= max_year) | (Movie.year.is_(None)))
+        return query
 
+    def _apply_genre_and_region_filters(
+        self,
+        db: Session,
+        query: Query,
+        genres: list[str] | None,
+        exclude_genres: list[str] | None,
+        regions: list[str] | None,
+    ) -> Query:
+        """Apply genre and region filters."""
         if genres:
             query = (
                 query.join(Movie.genres).join(MovieGenre.genre_obj).filter(Genre.name.in_(genres))
             )
             query = query.group_by(Movie.id).having(func.count(Genre.id) == len(genres))
+
+        if regions:
+            query = (
+                query.join(Movie.regions)
+                .join(MovieRegion.region_obj)
+                .filter(Region.name.in_(regions))
+            )
+            # Region filtering is OR logic (any of the regions match)
+            query = query.group_by(Movie.id)
 
         if exclude_genres:
             for g_name in exclude_genres:
@@ -241,7 +310,6 @@ class MovieService:
                         db.query(MovieGenre.movie_id).join(Genre).filter(Genre.name == g_name)
                     )
                 )
-
         return query
 
     @cached(prefix="movie_count")
@@ -256,6 +324,7 @@ class MovieService:
         max_year: int | None = None,
         genres: list[str] | None = None,
         exclude_genres: list[str] | None = None,
+        regions: list[str] | None = None,
         search: str | None = None,
     ) -> int:
         """Get count of movies matching filters."""
@@ -269,10 +338,11 @@ class MovieService:
             max_year=max_year,
             genres=genres,
             exclude_genres=exclude_genres,
+            regions=regions,
             search=search,
         )
 
-        if genres:
+        if genres or regions:
             return db.query(func.count()).select_from(query.subquery()).scalar() or 0
 
         return query.count()

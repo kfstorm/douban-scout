@@ -3,13 +3,14 @@
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.database import init_db
+from app.database import get_db_path
 from app.limiter import limiter
 from app.logging_config import setup_logging
 from app.routers.data_import import router as import_router
@@ -24,9 +25,16 @@ logger = logging.getLogger("douban.main")
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan context manager."""
     logger.info("Application starting up...")
-    # Startup
-    init_db()
-    logger.info("Database initialized successfully")
+    # Check database status
+    db_path = Path(get_db_path())
+    if not db_path.exists():
+        logger.warning(
+            f"Database file not found at {db_path}. "
+            "App will return errors until data is imported via /api/import."
+        )
+    else:
+        logger.info(f"Using database at {db_path}")
+
     yield
     # Shutdown
     logger.info("Application shutting down...")

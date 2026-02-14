@@ -1,7 +1,6 @@
 """Database models and connection management."""
 
 import contextlib
-import logging
 import sqlite3
 from collections.abc import Generator
 from pathlib import Path
@@ -37,6 +36,7 @@ class Movie(Base):  # type: ignore[misc, valid-type]
     updated_at = Column(Integer, nullable=True)
 
     genres = relationship("MovieGenre", back_populates="movie", cascade="all, delete-orphan")  # type: ignore[var-annotated]
+    regions = relationship("MovieRegion", back_populates="movie", cascade="all, delete-orphan")  # type: ignore[var-annotated]
     posters = relationship("MoviePoster", back_populates="movie", cascade="all, delete-orphan")  # type: ignore[var-annotated]
 
     __table_args__ = (
@@ -67,6 +67,29 @@ class MovieGenre(Base):  # type: ignore[misc, valid-type]
 
     movie = relationship("Movie", back_populates="genres")  # type: ignore[var-annotated]
     genre_obj = relationship("Genre", back_populates="movie_associations")  # type: ignore[var-annotated]
+
+
+class Region(Base):  # type: ignore[misc, valid-type]
+    """Region model."""
+
+    __tablename__ = "regions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(32), unique=True, nullable=False, index=True)
+
+    movie_associations = relationship("MovieRegion", back_populates="region_obj")  # type: ignore[var-annotated]
+
+
+class MovieRegion(Base):  # type: ignore[misc, valid-type]
+    """Region association model for movies."""
+
+    __tablename__ = "movie_regions"
+
+    movie_id = Column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True)
+    region_id = Column(Integer, ForeignKey("regions.id", ondelete="CASCADE"), primary_key=True)
+
+    movie = relationship("Movie", back_populates="regions")  # type: ignore[var-annotated]
+    region_obj = relationship("Region", back_populates="movie_associations")  # type: ignore[var-annotated]
 
 
 class MoviePoster(Base):  # type: ignore[misc, valid-type]
@@ -156,34 +179,6 @@ def set_sqlite_pragma(dbapi_connection, connection_record):  # type: ignore[no-u
 
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def init_db() -> None:
-    """Initialize database tables.
-
-    In read-only mode, we skip initialization if the file doesn't exist,
-    as we expect it to be provided by the import service.
-    """
-    db_path = Path(get_db_path())
-    is_readonly = "mode=ro" in DATABASE_URL
-
-    if is_readonly and not db_path.exists():
-        logging.getLogger("douban.database").warning(
-            f"Database file not found at {db_path}. "
-            "Skipping initialization. App will remain empty until data is imported."
-        )
-        return
-
-    try:
-        Base.metadata.create_all(bind=engine)  # type: ignore[attr-defined]
-    except sqlite3.OperationalError as e:
-        if is_readonly and "readonly" in str(e).lower():
-            logging.getLogger("douban.database").warning(
-                "Database is read-only. Skipping table creation. "
-                "Ensure database is populated via import service."
-            )
-        else:
-            raise
 
 
 def get_db() -> Generator[Session, None, None]:

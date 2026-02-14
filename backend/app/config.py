@@ -17,7 +17,8 @@ class Settings(BaseSettings):
 
     # Poster Cache
     poster_cache_ttl: int = Field(
-        default=365, description="本地海报图片的缓存有效期(天), 超过此天数后会尝试重新下载"
+        default=365,
+        description="本地海报图片的缓存有效期(天), 超过此天数后会尝试重新下载",
     )
 
     # Security
@@ -39,6 +40,9 @@ class Settings(BaseSettings):
     )
     rate_limit_genres: str = Field(
         default="20/minute", description="获取影视类型标签列表接口的访问速率限制"
+    )
+    rate_limit_regions: str = Field(
+        default="20/minute", description="获取影视地区标签列表接口的访问速率限制"
     )
     rate_limit_stats: str = Field(
         default="10/minute",

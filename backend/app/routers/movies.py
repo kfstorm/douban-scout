@@ -14,7 +14,7 @@ from app.cache import cached
 from app.config import settings
 from app.database import Movie, MoviePoster, get_db
 from app.limiter import limiter
-from app.schemas import GenreCount, MoviesListResponse, StatsResponse
+from app.schemas import GenreCount, MoviesListResponse, RegionCount, StatsResponse
 from app.services.movie_service import movie_service
 from app.services.poster_service import poster_cache_service
 
@@ -40,6 +40,7 @@ def get_movies(  # noqa: PLR0913
     exclude_genres: str | None = Query(
         None, description="Comma-separated genres to exclude (OR logic)"
     ),
+    regions: str | None = Query(None, description="Comma-separated regions (OR logic)"),
     search: str | None = Query(None, description="Search in title"),
     sort_by: Literal["rating", "rating_count", "year"] = Query("rating", description="Sort field"),
     sort_order: Literal["asc", "desc"] = Query("desc", description="Sort order"),
@@ -48,6 +49,7 @@ def get_movies(  # noqa: PLR0913
     """Get movies with filtering and pagination."""
     genre_list = genres.split(",") if genres else None
     exclude_genre_list = exclude_genres.split(",") if exclude_genres else None
+    region_list = regions.split(",") if regions else None
 
     return movie_service.get_movies(
         db=db,
@@ -61,6 +63,7 @@ def get_movies(  # noqa: PLR0913
         max_year=max_year,
         genres=genre_list,
         exclude_genres=exclude_genre_list,
+        regions=region_list,
         search=search,
         sort_by=sort_by,
         sort_order=sort_order,
@@ -76,6 +79,17 @@ def get_genres(
 ) -> list[GenreCount]:
     """Get all genres with counts."""
     return movie_service.get_genres(db, type)
+
+
+@router.get("/regions", response_model=list[RegionCount])
+@limiter.limit(settings.rate_limit_regions)
+def get_regions(
+    request: Request,
+    type: Literal["movie", "tv"] | None = Query(None, description="Filter by type"),
+    db: Session = Depends(get_db),  # noqa: B008
+) -> list[RegionCount]:
+    """Get all regions with counts."""
+    return movie_service.get_regions(db, type)
 
 
 @router.get("/stats", response_model=StatsResponse)

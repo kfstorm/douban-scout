@@ -2,9 +2,6 @@
 
 一个现代化的 Web 应用，用于探索豆瓣电影和电视节目，配备强大的筛选和搜索功能。
 
-![版本](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![许可](https://img.shields.io/badge/license-MIT-green.svg)
-
 ## 功能特性
 
 - **卡片网格视图**：精美的海报卡片，展示评分、类型和年份
@@ -87,6 +84,7 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/api/import/status
 | `RATE_LIMIT_DEFAULT` | `100/minute` | 全局默认的接口访问速率限制, 适用于未单独配置限流的接口 |
 | `RATE_LIMIT_SEARCH` | `30/minute` | 搜索标题、获取电影或电视节目列表等主要查询接口的访问速率限制 |
 | `RATE_LIMIT_GENRES` | `20/minute` | 获取影视类型标签列表接口的访问速率限制 |
+| `RATE_LIMIT_REGIONS` | `20/minute` | 获取影视地区标签列表接口的访问速率限制 |
 | `RATE_LIMIT_STATS` | `10/minute` | 获取数据统计信息(如作品总数、年份分布等)接口的访问速率限制 |
 | `RATE_LIMIT_POSTER` | `200/minute` | 海报图片代理服务接口的访问速率限制 |
 | `RATE_LIMIT_IMPORT` | `5/minute` | 触发数据导入任务以及查询导入进度接口的访问速率限制 |

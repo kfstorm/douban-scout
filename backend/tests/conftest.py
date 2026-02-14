@@ -14,7 +14,15 @@ from sqlalchemy.pool import NullPool
 from app import database as app_database
 from app.cache import cache_manager
 from app.config import settings
-from app.database import Base, Genre, Movie, MovieGenre, get_db
+from app.database import (
+    Base,
+    Genre,
+    Movie,
+    MovieGenre,
+    MovieRegion,
+    Region,
+    get_db,
+)
 from app.limiter import limiter
 from app.main import app
 from app.services.import_service import ImportService
@@ -103,6 +111,7 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             8.5,
             '{"detail": {"rating": {"count": 1000}, '
             '"pic": {"normal": "http://example.com/p1.jpg"}, '
+            '"countries": ["美国", "中国大陆"], '
             '"card_subtitle": "2000 / 美国 / 剧情 犯罪"}}',
             "movie",
             1612985849.0,
@@ -115,7 +124,7 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             7.5,
             '{"detail": {"rating": {"count": 500}, '
             '"pic": {"large": "http://example.com/p2.jpg"}, '
-            '"card_subtitle": "2001 / 美国 / 喜剧"}}',
+            '"card_subtitle": "2001 / 香港 / 喜剧"}}',
             "movie",
             1612985849.0,
         ),
@@ -378,5 +387,32 @@ def movies_with_genres(db_session: Session, sample_movies: list[Movie]) -> list[
     ]
     for movie_id, genre_id in genres_data:
         db_session.add(MovieGenre(movie_id=movie_id, genre_id=genre_id))
+    db_session.commit()
+    return sample_movies
+
+
+@pytest.fixture
+def movies_with_regions(db_session: Session, sample_movies: list[Movie]) -> list[Movie]:
+    """Add regions to sample movies."""
+    # First create unique regions
+    region_names = {"美国", "中国大陆", "香港", "日本"}
+    for name in region_names:
+        region = Region(name=name)
+        db_session.add(region)
+    db_session.flush()
+
+    regions_list = db_session.query(Region).all()
+    region_map = {r.name: r.id for r in regions_list}
+
+    regions_data = [
+        (sample_movies[0].id, region_map["美国"]),
+        (sample_movies[0].id, region_map["中国大陆"]),
+        (sample_movies[1].id, region_map["香港"]),
+        (sample_movies[2].id, region_map["日本"]),
+        (sample_movies[3].id, region_map["美国"]),
+        (sample_movies[4].id, region_map["香港"]),
+    ]
+    for movie_id, region_id in regions_data:
+        db_session.add(MovieRegion(movie_id=movie_id, region_id=region_id))
     db_session.commit()
     return sample_movies

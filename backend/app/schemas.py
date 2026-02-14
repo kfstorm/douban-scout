@@ -16,6 +16,7 @@ class MovieBase(BaseModel):
     rating_count: int = 0
     type: Literal["movie", "tv"]
     genres: list[str] = []
+    regions: list[str] = []
 
 
 class MovieResponse(MovieBase):
@@ -41,6 +42,13 @@ class GenreCount(BaseModel):
     count: int
 
 
+class RegionCount(BaseModel):
+    """Region count schema."""
+
+    region: str
+    count: int
+
+
 class ImportStatus(BaseModel):
     """Import process status schema."""
 
@@ -60,3 +68,4 @@ class StatsResponse(BaseModel):
     total_tv: int
     avg_rating: float
     total_genres: int
+    total_regions: int
