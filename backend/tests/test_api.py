@@ -496,9 +496,9 @@ class TestImportEndpoint:
         assert "not found" in data["detail"].lower()
 
     def test_start_import_already_running(
-        self, client: TestClient, populated_source_db, temp_source_db_path: str
+        self, client, populated_source_db, temp_source_db_path: str
     ):
-        """Test that starting import while already running returns current status."""
+        """Test that starting import while already running returns 409 Conflict."""
         headers = {"X-API-Key": "test-api-key"}
         response1 = client.post(
             "/api/import", json={"source_path": temp_source_db_path}, headers=headers
@@ -510,7 +510,5 @@ class TestImportEndpoint:
         response2 = client.post(
             "/api/import", json={"source_path": temp_source_db_path}, headers=headers
         )
-        assert response2.status_code == 200
-        data2 = response2.json()
-        assert data2["status"] == "running"
-        assert data2["processed"] == data1["processed"]
+        assert response2.status_code == 409
+        assert "Import already in progress" in response2.json()["detail"]

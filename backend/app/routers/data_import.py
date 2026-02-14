@@ -36,7 +36,10 @@ def start_import(
             status_code=404, detail=f"Source file not found: {import_request.source_path}"
         )
 
-    return import_service.start_import(import_request.source_path)
+    try:
+        return import_service.start_import(import_request.source_path)
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
 
 
 @router.get("/status", response_model=ImportStatus)

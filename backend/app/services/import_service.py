@@ -84,7 +84,7 @@ class ImportService:
         with self._lock:
             if self._status.status == "running":
                 logger.warning("Import already in progress, cannot start new import")
-                return self._status
+                raise RuntimeError("Import already in progress")
 
             logger.info(f"Starting import from: {source_path}")
             self._status = ImportStatus(
