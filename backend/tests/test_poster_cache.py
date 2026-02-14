@@ -17,6 +17,7 @@ class TestPosterCacheService:
         """Create a temporary cache service for testing."""
         with patch("app.services.poster_service.settings") as mock_settings:
             mock_settings.data_dir = str(tmp_path)
+            mock_settings.poster_cache_ttl = 365
             service = PosterCacheService()
             yield service
 
@@ -24,6 +25,7 @@ class TestPosterCacheService:
         """Test that cache directory is created automatically."""
         with patch("app.services.poster_service.settings") as mock_settings:
             mock_settings.data_dir = str(tmp_path)
+            mock_settings.poster_cache_ttl = 365
             service = PosterCacheService()
             assert service.cache_dir.exists()
             assert service.cache_dir == tmp_path / "cache/posters"
@@ -177,7 +179,10 @@ class TestPosterCacheService:
         assert count == 3
         assert len(list(temp_cache_service.cache_dir.glob("*"))) == 0
 
-    def test_cache_default_ttl(self, temp_cache_service):
-        """Test default TTL is 365 days."""
-        assert temp_cache_service.DEFAULT_TTL_DAYS == 365
-        assert temp_cache_service.ttl_days == 365
+    def test_cache_default_ttl(self, tmp_path):
+        """Test that cache service uses settings for default TTL."""
+        with patch("app.services.poster_service.settings") as mock_settings:
+            mock_settings.data_dir = str(tmp_path)
+            mock_settings.poster_cache_ttl = 100
+            service = PosterCacheService()
+            assert service.ttl_days == 100

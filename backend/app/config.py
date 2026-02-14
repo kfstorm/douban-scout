@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     # Data directory (contains database and cache)
     data_dir: str = Field(default="data", description="Root directory for all application data")
 
+    # Poster Cache
+    poster_cache_ttl: int = Field(default=365, description="Poster cache TTL in days")
+
     # Security
     import_api_key: str | None = Field(
         default=None, description="Secret key required for import API authentication"

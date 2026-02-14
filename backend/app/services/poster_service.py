@@ -14,16 +14,15 @@ class PosterCacheService:
     """Service for managing cached poster images."""
 
     CACHE_SUBDIR = "cache/posters"
-    DEFAULT_TTL_DAYS = 365
 
-    def __init__(self, ttl_days: int = DEFAULT_TTL_DAYS) -> None:
+    def __init__(self, ttl_days: int | None = None) -> None:
         """Initialize the poster cache service.
 
         Args:
-            ttl_days: Cache TTL in days (default: 365)
+            ttl_days: Cache TTL in days. If None, uses settings.poster_cache_ttl.
         """
         self.cache_dir = Path(settings.data_dir) / self.CACHE_SUBDIR
-        self.ttl_days = ttl_days
+        self.ttl_days = ttl_days if ttl_days is not None else settings.poster_cache_ttl
         self._ensure_cache_dir()
 
     def _ensure_cache_dir(self) -> None:
