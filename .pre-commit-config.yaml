@@ -49,3 +49,10 @@ repos:
         language: system
         files: ^frontend/
         pass_filenames: false
+
+      - id: sync-env-docs
+        name: Sync Environment Variables Docs
+        entry: ./scripts/sync_env_docs.py --check
+        language: system
+        files: ^(backend/app/config\.py|README\.md|scripts/sync_env_docs\.py)$
+        pass_filenames: false

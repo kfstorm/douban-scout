@@ -8,6 +8,8 @@ cd "$ROOT_DIR"
 echo "=== Fixing Backend ==="
 if [ -d "backend" ]; then
     bash backend/scripts/format.sh
+    # Sync environment variable documentation
+    ./scripts/sync_env_docs.py
 fi
 
 echo ""

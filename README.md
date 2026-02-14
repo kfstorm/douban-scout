@@ -75,14 +75,30 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/api/import/status
 
 The backend behavior can be customized using environment variables:
 
-- `DATABASE_DIR`: Directory containing the SQLite database file (default: `data`).
-- `IMPORT_API_KEY`: Secret key required for import API authentication.
-- `RATE_LIMIT_DEFAULT`: Global rate limit (default: `100/minute`).
-- `RATE_LIMIT_SEARCH`: Limit for search and movie list (default: `30/minute`).
-- `RATE_LIMIT_GENRES`: Limit for genres endpoint (default: `20/minute`).
-- `RATE_LIMIT_STATS`: Limit for stats endpoint (default: `10/minute`).
-- `RATE_LIMIT_POSTER`: Limit for poster proxy (default: `200/minute`).
-- `RATE_LIMIT_IMPORT`: Limit for data import endpoints (default: `5/minute`).
+<!-- ENV_VARS_START -->
+
+| Environment Variable | Default Value | Description |
+| -------------------- | ------------- | ----------- |
+| `DATABASE_DIR` | `data` | Directory containing the database file |
+| `IMPORT_API_KEY` | *None* | Secret key required for import API authentication |
+| `RATE_LIMIT_DEFAULT` | `100/minute` | Global default rate limit |
+| `RATE_LIMIT_SEARCH` | `30/minute` | Limit for search and movie list endpoints |
+| `RATE_LIMIT_GENRES` | `20/minute` | Limit for genres endpoint |
+| `RATE_LIMIT_STATS` | `10/minute` | Limit for stats endpoint |
+| `RATE_LIMIT_POSTER` | `200/minute` | Limit for poster proxy endpoint |
+| `RATE_LIMIT_IMPORT` | `5/minute` | Limit for data import endpoints |
+
+<!-- ENV_VARS_END -->
+
+### Rate Limit Format
+
+Rate limit strings follow the format `[count]/[time_period]`. Examples:
+
+- `10/minute`
+- `500/hour`
+- `1/second`
+
+Supported time periods: `second`, `minute`, `hour`, `day`, `month`, `year`.
 
 ## Troubleshooting
 
