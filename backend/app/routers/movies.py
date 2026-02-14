@@ -1,11 +1,12 @@
 """Movie API endpoints."""
 
 import re
+from collections.abc import AsyncIterator
 from typing import Literal
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 
@@ -15,8 +16,12 @@ from app.database import Movie, MoviePoster, get_db
 from app.limiter import limiter
 from app.schemas import GenreCount, MoviesListResponse, StatsResponse
 from app.services.movie_service import movie_service
+from app.services.poster_service import poster_cache_service
 
 router = APIRouter(prefix="/movies", tags=["movies"])
+
+# Cache posters for 30 days in the browser
+POSTER_CACHE_MAX_AGE = 30 * 24 * 60 * 60
 
 
 @router.get("", response_model=MoviesListResponse)
@@ -131,18 +136,32 @@ async def _find_working_poster_url(poster_urls: list[str]) -> tuple[str, str] | 
     return None
 
 
-@router.get("/{id}/poster")
+@router.get("/{id}/poster", response_model=None)
 @limiter.limit(settings.rate_limit_poster)
 async def get_poster(
     request: Request,
     id: int,
     db: Session = Depends(get_db),  # noqa: B008
-) -> StreamingResponse:
+) -> FileResponse | StreamingResponse:
     """Proxy poster images from Douban to bypass CORS restrictions.
 
     Fetches poster URLs from the database for the given id,
     then proxies the first working image from Douban's CDN.
+    Posters are cached locally to improve performance and reduce load on Douban servers.
     """
+    # Check cache first
+    cached_result = poster_cache_service.get_cached_poster(id)
+    if cached_result:
+        cache_path, content_type = cached_result
+        return FileResponse(
+            path=cache_path,
+            media_type=content_type,
+            headers={
+                "Cache-Control": f"public, max-age={POSTER_CACHE_MAX_AGE}",
+                "X-Cache": "HIT",
+            },
+        )
+
     # Fetch movie and all poster URLs from database
     movie = db.query(Movie).filter(Movie.id == id).first()
     if not movie:
@@ -170,17 +189,26 @@ async def get_poster(
     }
 
     try:
-        # We don't use the client from _find_working_poster_url to keep it simple
-        # and because StreamingResponse needs an open stream.
         client = httpx.AsyncClient()
         response = await client.get(working_url, headers=headers, timeout=10.0)
         response.raise_for_status()
 
+        # Read all content for caching
+        content = await response.aread()
+
+        # Save to cache
+        poster_cache_service.save_poster(id, content, content_type)
+
+        # Return streaming response with cached content
+        async def content_generator() -> AsyncIterator[bytes]:
+            yield content
+
         return StreamingResponse(
-            response.aiter_bytes(),
+            content_generator(),
             media_type=content_type,
             headers={
-                "Cache-Control": "public, max-age=86400",
+                "Cache-Control": f"public, max-age={POSTER_CACHE_MAX_AGE}",
+                "X-Cache": "MISS",
             },
             background=BackgroundTask(client.aclose),
         )

@@ -81,7 +81,7 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/api/import/status
 
 | Environment Variable | Default Value | Description |
 | -------------------- | ------------- | ----------- |
-| `DATABASE_DIR` | `data` | Directory containing the database file |
+| `DATA_DIR` | `data` | Root directory for all application data |
 | `IMPORT_API_KEY` | *None* | Secret key required for import API authentication |
 | `RATE_LIMIT_DEFAULT` | `100/minute` | Global default rate limit |
 | `RATE_LIMIT_SEARCH` | `30/minute` | Limit for search and movie list endpoints |

@@ -36,9 +36,9 @@ class TestRateLimiting:
     def test_rate_limit_config_loading(self, monkeypatch):
         """Test that rate limits are loaded from environment variables."""
         monkeypatch.setenv("RATE_LIMIT_STATS", "5/minute")
-        monkeypatch.setenv("DATABASE_DIR", "/tmp/test_data")
+        monkeypatch.setenv("DATA_DIR", "/tmp/test_data")
 
         # Create a new settings instance to verify loading
         new_settings = Settings()
         assert new_settings.rate_limit_stats == "5/minute"
-        assert new_settings.database_dir == "/tmp/test_data"
+        assert new_settings.data_dir == "/tmp/test_data"

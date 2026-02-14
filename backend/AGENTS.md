@@ -26,8 +26,8 @@ uv sync
 # Run development server
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Run with custom database directory
-DATABASE_DIR=custom_data uv run uvicorn app.main:app --reload
+# Run with custom data directory
+DATA_DIR=custom_data uv run uvicorn app.main:app --reload
 
 # Lint and format
 scripts/lint.sh      # ruff check + mypy
@@ -216,8 +216,12 @@ backend/
 │   │   └── data_import.py
 │   └── services/            # Business logic
 │       ├── movie_service.py
-│       └── import_service.py
-├── data/                    # SQLite database directory
+│       ├── import_service.py
+│       └── poster_service.py
+├── data/                    # Application data directory
+│   ├── db/                  # SQLite database
+│   └── cache/               # Cached data
+│       └── posters/         # Cached poster images
 ├── scripts/                 # Dev scripts
 │   ├── lint.sh
 │   ├── format.sh
@@ -225,7 +229,8 @@ backend/
 ├── tests/                   # Unit tests
 │   ├── conftest.py
 │   ├── test_api.py
-│   └── test_services.py
+│   ├── test_services.py
+│   └── test_poster_cache.py
 ├── pyproject.toml
 └── uv.lock
 ```

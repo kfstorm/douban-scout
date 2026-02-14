@@ -9,8 +9,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings."""
 
-    # Database
-    database_dir: str = Field(default="data", description="Directory containing the database file")
+    # Data directory (contains database and cache)
+    data_dir: str = Field(default="data", description="Root directory for all application data")
 
     # Security
     import_api_key: str | None = Field(
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Get the database URL."""
-        db_path = Path(self.database_dir) / "movies.db"
+        db_path = Path(self.data_dir) / "db" / "movies.db"
         return f"sqlite:///{db_path}"
 
 

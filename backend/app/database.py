@@ -91,7 +91,7 @@ def get_db_path() -> str:
         if isinstance(url, str) and url.startswith("sqlite:///"):
             return url.replace("sqlite:///", "").split("?")[0]
 
-    return str(Path(settings.database_dir).absolute() / DATABASE_NAME)
+    return str(Path(settings.data_dir).absolute() / "db" / DATABASE_NAME)
 
 
 # Construct initial DATABASE_URL
