@@ -3,6 +3,7 @@ import { FunnelIcon } from '@heroicons/react/24/outline';
 import { MovieGrid } from './components/MovieGrid';
 import { FilterSidebar } from './components/FilterSidebar';
 import { ThemeToggle } from './components/ThemeToggle';
+import { NotificationToast } from './components/NotificationToast';
 import { useFilterStore } from './store/useFilterStore';
 import { useUrlSync } from './hooks/useUrlSync';
 import './App.css';
@@ -14,6 +15,7 @@ function App() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-gray-50 dark:bg-gray-900 transition-colors">
+      <NotificationToast />
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

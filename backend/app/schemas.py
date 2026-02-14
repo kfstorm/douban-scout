@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class MovieBase(BaseModel):
@@ -23,10 +23,7 @@ class MovieResponse(MovieBase):
 
     updated_at: int | None = None
 
-    class Config:
-        """Pydantic configuration."""
-
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MoviesListResponse(BaseModel):

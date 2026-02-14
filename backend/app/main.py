@@ -4,10 +4,13 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.database import init_db
+from app.limiter import limiter
 from app.logging_config import setup_logging
 from app.routers.data_import import router as import_router
 from app.routers.movies import router as movies_router
@@ -35,6 +38,14 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
+    """Handle rate limit exceeded errors."""
+    return _rate_limit_exceeded_handler(request, exc)
+
 
 # CORS
 app.add_middleware(

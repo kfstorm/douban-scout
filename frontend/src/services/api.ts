@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { MoviesListResponse, GenreCount, StatsResponse } from '../types/movie';
+import { useNotificationStore } from '../store/useNotificationStore';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -9,6 +10,17 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Response interceptor for global error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 429) {
+      useNotificationStore.getState().addNotification('操作太频繁，请稍后再试', 'warning');
+    }
+    return Promise.reject(error);
+  },
+);
 
 export interface MoviesParams {
   cursor?: string;

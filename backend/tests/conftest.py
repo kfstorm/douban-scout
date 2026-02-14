@@ -13,15 +13,21 @@ from sqlalchemy.pool import NullPool
 
 from app import database as app_database
 from app.cache import cache_manager
+from app.config import settings
 from app.database import Base, Genre, Movie, MovieGenre, get_db
+from app.limiter import limiter
 from app.main import app
 from app.services.import_service import ImportService
 
 
 @pytest.fixture(autouse=True)
 def setup_test_env(monkeypatch):
-    """Set up test environment variables."""
+    """Set up test environment variables and disable rate limiting."""
     monkeypatch.setenv("IMPORT_API_KEY", "test-api-key")
+    # Update settings from env vars
+    settings.import_api_key = "test-api-key"
+    # Disable rate limiting for tests
+    limiter.enabled = False
 
 
 @pytest.fixture(scope="session")

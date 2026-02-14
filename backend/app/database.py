@@ -2,7 +2,6 @@
 
 import contextlib
 import logging
-import os
 import sqlite3
 from collections.abc import Generator
 from pathlib import Path
@@ -17,8 +16,9 @@ from sqlalchemy import (
     create_engine,
     event,
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, relationship, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, relationship, sessionmaker
+
+from app.config import settings
 
 Base = declarative_base()
 
@@ -80,7 +80,6 @@ class MoviePoster(Base):  # type: ignore[misc, valid-type]
     movie = relationship("Movie", back_populates="posters")  # type: ignore[var-annotated]
 
 
-DATABASE_DIR = os.getenv("DATABASE_DIR", "data")
 DATABASE_NAME = "movies.db"
 
 
@@ -92,7 +91,7 @@ def get_db_path() -> str:
         if isinstance(url, str) and url.startswith("sqlite:///"):
             return url.replace("sqlite:///", "").split("?")[0]
 
-    return str(Path(DATABASE_DIR).absolute() / DATABASE_NAME)
+    return str(Path(settings.database_dir).absolute() / DATABASE_NAME)
 
 
 # Construct initial DATABASE_URL

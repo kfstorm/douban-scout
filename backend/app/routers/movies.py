@@ -4,13 +4,15 @@ import re
 from typing import Literal
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 
 from app.cache import cached
+from app.config import settings
 from app.database import Movie, MoviePoster, get_db
+from app.limiter import limiter
 from app.schemas import GenreCount, MoviesListResponse, StatsResponse
 from app.services.movie_service import movie_service
 
@@ -18,7 +20,9 @@ router = APIRouter(prefix="/movies", tags=["movies"])
 
 
 @router.get("", response_model=MoviesListResponse)
+@limiter.limit(settings.rate_limit_search)
 def get_movies(  # noqa: PLR0913
+    request: Request,
     cursor: str | None = Query(None, description="Cursor for pagination"),
     limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
     type: Literal["movie", "tv"] | None = Query(None, description="Filter by type"),
@@ -59,7 +63,9 @@ def get_movies(  # noqa: PLR0913
 
 
 @router.get("/genres", response_model=list[GenreCount])
+@limiter.limit(settings.rate_limit_genres)
 def get_genres(
+    request: Request,
     type: Literal["movie", "tv"] | None = Query(None, description="Filter by type"),
     db: Session = Depends(get_db),  # noqa: B008
 ) -> list[GenreCount]:
@@ -68,7 +74,9 @@ def get_genres(
 
 
 @router.get("/stats", response_model=StatsResponse)
+@limiter.limit(settings.rate_limit_stats)
 def get_stats(
+    request: Request,
     db: Session = Depends(get_db),  # noqa: B008
 ) -> StatsResponse:
     """Get database statistics."""
@@ -124,7 +132,9 @@ async def _find_working_poster_url(poster_urls: list[str]) -> tuple[str, str] | 
 
 
 @router.get("/{id}/poster")
+@limiter.limit(settings.rate_limit_poster)
 async def get_poster(
+    request: Request,
     id: int,
     db: Session = Depends(get_db),  # noqa: B008
 ) -> StreamingResponse:

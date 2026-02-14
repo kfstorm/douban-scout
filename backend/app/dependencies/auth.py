@@ -1,9 +1,9 @@
 """Authentication dependencies."""
 
-import os
-
 from fastapi import HTTPException, Security, status
 from fastapi.security import APIKeyHeader
+
+from app.config import settings
 
 API_KEY_NAME = "X-API-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
@@ -21,7 +21,7 @@ def verify_api_key(api_key: str = Security(api_key_header)) -> str:
     Raises:
         HTTPException: If key is missing or invalid.
     """
-    expected_key = os.getenv("IMPORT_API_KEY")
+    expected_key = settings.import_api_key
     if not expected_key:
         # If not configured, reject all requests for safety
         raise HTTPException(

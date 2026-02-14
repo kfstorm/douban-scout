@@ -9,6 +9,7 @@ This document provides guidelines for AI agents working on the **backend** codeb
 - **Framework**: FastAPI
 - **Database**: SQLite with SQLAlchemy 2.0
 - **ORM**: SQLAlchemy
+- **Throttling**: slowapi (configurable via pydantic-settings)
 - **Testing**: pytest
 - **Linting**: ruff + mypy
 - **Package Manager**: uv
@@ -43,6 +44,13 @@ PYTHONPATH=. uv run pytest tests/test_api.py -v
 ## Environment Variables
 
 - `DATABASE_DIR`: Directory containing the database file (default: `data`)
+- `IMPORT_API_KEY`: Secret key required for import API authentication
+- `RATE_LIMIT_DEFAULT`: Global rate limit (default: `100/minute`)
+- `RATE_LIMIT_SEARCH`: Limit for search and movie list (default: `30/minute`)
+- `RATE_LIMIT_GENRES`: Limit for genres endpoint (default: `20/minute`)
+- `RATE_LIMIT_STATS`: Limit for stats endpoint (default: `10/minute`)
+- `RATE_LIMIT_POSTER`: Limit for poster proxy (default: `200/minute`)
+- `RATE_LIMIT_IMPORT`: Limit for data import endpoints (default: `5/minute`)
 
 ## Code Style Guidelines
 
@@ -113,6 +121,44 @@ def get_movies(
 logger = logging.getLogger("douban.movies")
 logger.info("Querying movies with filters: %s", filters)
 logger.error("Failed to import: %s", e, exc_info=True)
+```
+
+## API Endpoints & Security
+
+### Throttling (Rate Limiting)
+
+All public endpoints **must** have rate limiting applied using the `limiter` instance from `app.limiter`.
+
+- Use `@limiter.limit(settings.rate_limit_...)` decorator.
+- Thresholds should be configurable in `app/config.py` via `Settings`.
+- The endpoint function **must** accept a `Request` object as its first argument for the limiter to work.
+
+Example:
+
+```python
+from fastapi import Request
+from app.config import settings
+from app.limiter import limiter
+
+@router.get("/my-endpoint")
+@limiter.limit(settings.rate_limit_default)
+def my_endpoint(request: Request):
+    ...
+```
+
+### Authentication
+
+Endpoints that perform administrative actions (like data modification or import) **must** be protected.
+
+- Use the `verify_api_key` dependency from `app.dependencies.auth`.
+- For router-wide protection, add it to the `APIRouter` dependencies.
+
+Example:
+
+```python
+from app.dependencies.auth import verify_api_key
+
+router = APIRouter(prefix="/admin", dependencies=[Depends(verify_api_key)])
 ```
 
 ## Database (SQLAlchemy & SQLite)

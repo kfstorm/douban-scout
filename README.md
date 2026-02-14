@@ -19,6 +19,7 @@ A modern web application for exploring Douban movies and TV shows with powerful 
 - **Dark Mode**: Toggle between light and dark themes
 - **Mobile Responsive**: Optimized for all screen sizes
 - **Data Import**: Runtime import from SQLite backup files
+- **API Throttling**: Configurable rate limiting to protect the service
 
 ## Quick Start
 
@@ -76,6 +77,12 @@ The backend behavior can be customized using environment variables:
 
 - `DATABASE_DIR`: Directory containing the SQLite database file (default: `data`).
 - `IMPORT_API_KEY`: Secret key required for import API authentication.
+- `RATE_LIMIT_DEFAULT`: Global rate limit (default: `100/minute`).
+- `RATE_LIMIT_SEARCH`: Limit for search and movie list (default: `30/minute`).
+- `RATE_LIMIT_GENRES`: Limit for genres endpoint (default: `20/minute`).
+- `RATE_LIMIT_STATS`: Limit for stats endpoint (default: `10/minute`).
+- `RATE_LIMIT_POSTER`: Limit for poster proxy (default: `200/minute`).
+- `RATE_LIMIT_IMPORT`: Limit for data import endpoints (default: `5/minute`).
 
 ## Troubleshooting
 
