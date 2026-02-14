@@ -17,6 +17,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
     minRating,
     maxRating,
     minRatingCount,
+    minYear,
+    maxYear,
     selectedGenres,
     excludedGenres,
     sortBy,
@@ -25,6 +27,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
     setMinRating,
     setMaxRating,
     setMinRatingCount,
+    setMinYear,
+    setMaxYear,
     clearGenres,
     cycleGenre,
     clearExcludedGenres,
@@ -123,6 +127,38 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
               step="0.1"
               value={maxRating}
               onChange={(e) => setMaxRating(parseFloat(e.target.value) || 10)}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Year Range */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">年份范围</h3>
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <label htmlFor="min-year" className="text-xs text-gray-600 dark:text-gray-400">
+              起始
+            </label>
+            <input
+              id="min-year"
+              type="number"
+              value={minYear || ''}
+              onChange={(e) => setMinYear(parseInt(e.target.value) || null)}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          </div>
+          <span className="text-gray-400">-</span>
+          <div className="flex-1">
+            <label htmlFor="max-year" className="text-xs text-gray-600 dark:text-gray-400">
+              结束
+            </label>
+            <input
+              id="max-year"
+              type="number"
+              value={maxYear || ''}
+              onChange={(e) => setMaxYear(parseInt(e.target.value) || null)}
               className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>

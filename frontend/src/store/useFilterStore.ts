@@ -5,6 +5,8 @@ export interface FilterState {
   minRating: number;
   maxRating: number;
   minRatingCount: number;
+  minYear: number | null;
+  maxYear: number | null;
   selectedGenres: string[];
   excludedGenres: string[];
   searchQuery: string;
@@ -16,6 +18,8 @@ export interface FilterState {
   setMinRating: (rating: number) => void;
   setMaxRating: (rating: number) => void;
   setMinRatingCount: (count: number) => void;
+  setMinYear: (year: number | null) => void;
+  setMaxYear: (year: number | null) => void;
   toggleGenre: (genre: string) => void;
   setSelectedGenres: (genres: string[]) => void;
   clearGenres: () => void;
@@ -34,6 +38,8 @@ const initialState = {
   minRating: 0,
   maxRating: 10,
   minRatingCount: 0,
+  minYear: null as number | null,
+  maxYear: null as number | null,
   selectedGenres: [] as string[],
   excludedGenres: [] as string[],
   searchQuery: '',
@@ -51,6 +57,10 @@ export const useFilterStore = create<FilterState>()((set) => ({
   setMaxRating: (maxRating) => set({ maxRating }),
 
   setMinRatingCount: (minRatingCount) => set({ minRatingCount }),
+
+  setMinYear: (minYear) => set({ minYear }),
+
+  setMaxYear: (maxYear) => set({ maxYear }),
 
   toggleGenre: (genre) =>
     set((state) => ({

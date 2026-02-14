@@ -7,6 +7,8 @@ export function useUrlSync() {
     minRating,
     maxRating,
     minRatingCount,
+    minYear,
+    maxYear,
     selectedGenres,
     excludedGenres,
     searchQuery,
@@ -16,6 +18,8 @@ export function useUrlSync() {
     setMinRating,
     setMaxRating,
     setMinRatingCount,
+    setMinYear,
+    setMaxYear,
     setSearchQuery,
     setSortBy,
     setSortOrder,
@@ -37,6 +41,8 @@ export function useUrlSync() {
     if (params.has('min_rating')) setMinRating(Number(params.get('min_rating')));
     if (params.has('max_rating')) setMaxRating(Number(params.get('max_rating')));
     if (params.has('min_rating_count')) setMinRatingCount(Number(params.get('min_rating_count')));
+    if (params.has('min_year')) setMinYear(Number(params.get('min_year')));
+    if (params.has('max_year')) setMaxYear(Number(params.get('max_year')));
     if (params.has('q')) setSearchQuery(params.get('q') || '');
     if (params.has('sort_by')) {
       const val = params.get('sort_by');
@@ -65,6 +71,8 @@ export function useUrlSync() {
     setSortOrder,
     setSelectedGenres,
     setExcludedGenres,
+    setMinYear,
+    setMaxYear,
   ]);
 
   // Initial load
@@ -91,6 +99,8 @@ export function useUrlSync() {
     if (minRating > 0) params.set('min_rating', minRating.toString());
     if (maxRating < 10) params.set('max_rating', maxRating.toString());
     if (minRatingCount > 0) params.set('min_rating_count', minRatingCount.toString());
+    if (minYear !== null) params.set('min_year', minYear.toString());
+    if (maxYear !== null) params.set('max_year', maxYear.toString());
     if (selectedGenres.length > 0) params.set('genres', selectedGenres.join(','));
     if (excludedGenres.length > 0) params.set('exclude_genres', excludedGenres.join(','));
     if (searchQuery) params.set('q', searchQuery);
@@ -109,6 +119,8 @@ export function useUrlSync() {
     minRating,
     maxRating,
     minRatingCount,
+    minYear,
+    maxYear,
     selectedGenres,
     excludedGenres,
     searchQuery,

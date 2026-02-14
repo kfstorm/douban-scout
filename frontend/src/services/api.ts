@@ -17,6 +17,8 @@ export interface MoviesParams {
   min_rating?: number;
   max_rating?: number;
   min_rating_count?: number;
+  min_year?: number;
+  max_year?: number;
   genres?: string[];
   exclude_genres?: string[];
   search?: string;

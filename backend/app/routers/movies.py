@@ -23,6 +23,8 @@ def get_movies(  # noqa: PLR0913
     min_rating: float | None = Query(None, ge=0, le=10, description="Minimum rating"),
     max_rating: float | None = Query(None, ge=0, le=10, description="Maximum rating"),
     min_rating_count: int | None = Query(None, ge=0, description="Minimum rating count"),
+    min_year: int | None = Query(None, description="Minimum year"),
+    max_year: int | None = Query(None, description="Maximum year"),
     genres: str | None = Query(None, description="Comma-separated genres (AND logic)"),
     exclude_genres: str | None = Query(
         None, description="Comma-separated genres to exclude (OR logic)"
@@ -44,6 +46,8 @@ def get_movies(  # noqa: PLR0913
         min_rating=min_rating,
         max_rating=max_rating,
         min_rating_count=min_rating_count,
+        min_year=min_year,
+        max_year=max_year,
         genres=genre_list,
         exclude_genres=exclude_genre_list,
         search=search,

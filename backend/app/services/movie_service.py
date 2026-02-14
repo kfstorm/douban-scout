@@ -27,6 +27,8 @@ class MovieService:
         min_rating: float | None = None,
         max_rating: float | None = None,
         min_rating_count: int | None = None,
+        min_year: int | None = None,
+        max_year: int | None = None,
         genres: list[str] | None = None,
         exclude_genres: list[str] | None = None,
         search: str | None = None,
@@ -63,6 +65,18 @@ class MovieService:
 
         if min_rating_count is not None:
             query = query.filter(Movie.rating_count >= min_rating_count)
+
+        # Year filters
+        # When min_year is not set, include NULL years
+        # When min_year is set, exclude NULL years
+        if min_year is not None:
+            query = query.filter(Movie.year.isnot(None))
+            if max_year is not None:
+                query = query.filter(Movie.year.between(min_year, max_year))
+            else:
+                query = query.filter(Movie.year >= min_year)
+        elif max_year is not None:
+            query = query.filter((Movie.year <= max_year) | (Movie.year.is_(None)))
 
         if search:
             query = query.filter(Movie.title.ilike(f"%{search}%"))
