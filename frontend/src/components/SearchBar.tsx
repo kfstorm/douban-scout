@@ -7,15 +7,23 @@ export const SearchBar: React.FC = () => {
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const [isComposing, setIsComposing] = useState(false);
 
+  // Sync local query with store query (e.g. on initial load from URL)
+  useEffect(() => {
+    setLocalQuery(searchQuery);
+  }, [searchQuery]);
+
   useEffect(() => {
     if (isComposing) return;
+
+    // Avoid triggering if localQuery is already in sync with store
+    if (localQuery === searchQuery) return;
 
     const timer = setTimeout(() => {
       setSearchQuery(localQuery);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [localQuery, isComposing, setSearchQuery]);
+  }, [localQuery, isComposing, setSearchQuery, searchQuery]);
 
   return (
     <div className="relative">
