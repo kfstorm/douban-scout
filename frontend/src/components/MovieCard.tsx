@@ -96,6 +96,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
           }`}
         >
           <div className="mb-1 font-semibold border-b border-white/20 pb-1">作品详情</div>
+          <div className="font-medium text-white mb-2 leading-tight">{movie.title}</div>
           <div className="text-gray-300 mt-1">数据更新时间: {timeAgo(movie.updated_at)}</div>
           <div className="text-gray-300 mt-1">评分人数: {movie.rating_count.toLocaleString()}</div>
           <div className="text-gray-300 mt-1 leading-relaxed break-words">
