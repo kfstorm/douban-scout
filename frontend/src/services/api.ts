@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { MoviesListResponse, GenreCount, StatsResponse, ImportStatus } from '../types/movie';
+import type { MoviesListResponse, GenreCount, StatsResponse } from '../types/movie';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -47,18 +47,6 @@ export const moviesApi = {
 
   getStats: async (): Promise<StatsResponse> => {
     const response = await api.get('/movies/stats');
-    return response.data;
-  },
-};
-
-export const importApi = {
-  startImport: async (sourcePath: string): Promise<ImportStatus> => {
-    const response = await api.post('/import', { source_path: sourcePath });
-    return response.data;
-  },
-
-  getStatus: async (): Promise<ImportStatus> => {
-    const response = await api.get('/import/status');
     return response.data;
   },
 };

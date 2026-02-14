@@ -1,52 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 import { MovieGrid } from './components/MovieGrid';
 import { FilterSidebar } from './components/FilterSidebar';
 import { ThemeToggle } from './components/ThemeToggle';
-import { ImportStatusBanner } from './components/ImportStatus';
 import { useFilterStore } from './store/useFilterStore';
 import { useUrlSync } from './hooks/useUrlSync';
-import { importApi } from './services/api';
-import type { ImportStatus } from './types/movie';
 import './App.css';
 
 function App() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [importStatus, setImportStatus] = useState<ImportStatus>({
-    status: 'idle',
-    processed: 0,
-    total: 0,
-    percentage: 0,
-    message: null,
-    started_at: null,
-    completed_at: null,
-  });
   const { resetFilters } = useFilterStore();
   useUrlSync();
-
-  // Poll import status
-  useEffect(() => {
-    const pollStatus = async () => {
-      try {
-        const status = await importApi.getStatus();
-        setImportStatus(status);
-      } catch (error) {
-        console.error('Failed to fetch import status:', error);
-      }
-    };
-
-    // Initial check
-    pollStatus();
-
-    // Poll every 2 seconds if import is running
-    const interval = setInterval(() => {
-      if (importStatus.status === 'running') {
-        pollStatus();
-      }
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [importStatus.status]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -78,13 +42,6 @@ function App() {
           </div>
         </div>
       </header>
-
-      {/* Import Status Banner */}
-      {importStatus.status !== 'idle' && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-          <ImportStatusBanner status={importStatus} />
-        </div>
-      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
