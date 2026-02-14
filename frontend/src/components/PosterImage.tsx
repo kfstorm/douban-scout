@@ -3,12 +3,12 @@ import { PhotoIcon } from '@heroicons/react/24/outline';
 import { getPosterProxyUrl } from '../services/api';
 
 interface PosterImageProps {
-  doubanId: string;
+  id: number;
   title: string;
   className?: string;
 }
 
-export const PosterImage: React.FC<PosterImageProps> = ({ doubanId, title, className = '' }) => {
+export const PosterImage: React.FC<PosterImageProps> = ({ id, title, className = '' }) => {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +31,7 @@ export const PosterImage: React.FC<PosterImageProps> = ({ doubanId, title, class
         </div>
       )}
       <img
-        src={getPosterProxyUrl(doubanId)}
+        src={getPosterProxyUrl(id)}
         alt={title}
         className={`w-full h-full object-cover transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
         onLoad={() => setLoading(false)}

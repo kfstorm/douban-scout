@@ -1,13 +1,10 @@
 export interface Movie {
   id: number;
-  douban_id: string;
-  imdb_id: string | null;
   title: string;
   year: number | null;
   rating: number | null;
   rating_count: number;
   type: 'movie' | 'tv';
-  douban_url: string;
   genres: string[];
   updated_at: number | null;
 }

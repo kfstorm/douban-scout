@@ -63,8 +63,8 @@ export const importApi = {
   },
 };
 
-export const getPosterProxyUrl = (doubanId: string): string => {
-  return `${API_URL}/movies/${doubanId}/poster`;
+export const getPosterProxyUrl = (id: number): string => {
+  return `${API_URL}/movies/${id}/poster`;
 };
 
 export default api;

@@ -41,16 +41,18 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
     return `${years} 年前`;
   };
 
+  const doubanUrl = `https://movie.douban.com/subject/${movie.id}/`;
+
   return (
     <a
-      href={movie.douban_url}
+      href={doubanUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="group block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 relative"
     >
       <div className="aspect-[2/3] relative rounded-t-lg">
         <PosterImage
-          doubanId={movie.douban_id}
+          id={movie.id}
           title={movie.title}
           className="w-full h-full group-hover:scale-105 transition-transform duration-300"
         />
