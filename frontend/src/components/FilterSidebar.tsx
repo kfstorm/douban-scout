@@ -94,7 +94,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
         <div className="flex items-center gap-1 mb-3 group relative">
           <h3 className="text-sm font-medium text-gray-900 dark:text-white">评分范围</h3>
           <InformationCircleIcon className="w-4 h-4 text-gray-400 cursor-help" />
-          <div className="absolute left-0 top-6 w-64 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity z-10">
+          <div className="absolute left-0 top-6 w-64 max-w-[calc(100vw-4rem)] px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity z-10">
             最低评分设为 0 时将包含未评分的作品
           </div>
         </div>

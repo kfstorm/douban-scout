@@ -89,7 +89,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
       >
         <InformationCircleIcon className="w-6 h-6 text-white/90 hover:text-white drop-shadow-lg transition-colors cursor-help" />
         <div
-          className={`absolute left-2 top-10 w-max max-w-[180px] p-2 bg-gray-900/95 text-white text-xs rounded shadow-lg transition-all pointer-events-none ${
+          className={`absolute left-0 top-10 w-max max-w-[160px] sm:max-w-[180px] p-2 bg-gray-900/95 text-white text-xs rounded shadow-lg transition-all pointer-events-none ${
             showInfo
               ? 'opacity-100 visible'
               : 'opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible'
