@@ -156,5 +156,5 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/api/import/status
 
 ## Environment Variables
 
-- `DATABASE_DIR`: Directory containing `movies.db` (default: `data`)
+- `DATABASE_DIR`: Directory containing the database file (default: `data`)
 - `IMPORT_API_KEY`: Secret key required for import API authentication. If not set, import API will reject all requests.

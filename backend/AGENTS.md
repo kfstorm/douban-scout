@@ -42,7 +42,7 @@ PYTHONPATH=. uv run pytest tests/test_api.py -v
 
 ## Environment Variables
 
-- `DATABASE_DIR`: Directory containing `movies.db` (default: `data`)
+- `DATABASE_DIR`: Directory containing the database file (default: `data`)
 
 ## Code Style Guidelines
 
