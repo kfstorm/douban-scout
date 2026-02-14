@@ -115,12 +115,14 @@ logger.info("Querying movies with filters: %s", filters)
 logger.error("Failed to import: %s", e, exc_info=True)
 ```
 
-## Database (SQLAlchemy)
+## Database (SQLAlchemy & SQLite)
 
 - Use SQLAlchemy 2.0 patterns
 - Models in `app/database.py`
 - Schemas in `app/schemas.py`
 - Services in `app/services/`
+- **Search**: Uses SQLite FTS5 virtual table `movie_search` for optimized title search
+- **Concurrency**: Database is served in read-only mode with atomic swaps during import to ensure consistency
 - Use dependency injection for sessions:
 
 ```python
@@ -159,17 +161,20 @@ Rules enabled: E, W, F, I, N, D (google), UP, B, C4, SIM, PTH, PL, PERF, RUF
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py              # FastAPI entry point
-│   ├── database.py          # SQLAlchemy models
-│   ├── schemas.py           # Pydantic schemas
+│   ├── cache.py             # In-memory cache manager
+│   ├── database.py          # SQLAlchemy models & connection
 │   ├── logging_config.py    # Logging setup
+│   ├── main.py              # FastAPI entry point
+│   ├── schemas.py           # Pydantic schemas
+│   ├── dependencies/        # FastAPI dependencies
+│   │   └── auth.py          # API key verification
 │   ├── routers/             # API endpoints
 │   │   ├── movies.py
 │   │   └── data_import.py
 │   └── services/            # Business logic
 │       ├── movie_service.py
 │       └── import_service.py
-├── data/                    # SQLite database
+├── data/                    # SQLite database directory
 ├── scripts/                 # Dev scripts
 │   ├── lint.sh
 │   ├── format.sh
@@ -179,6 +184,5 @@ backend/
 │   ├── test_api.py
 │   └── test_services.py
 ├── pyproject.toml
-├── uv.lock
-└── README.md
+└── uv.lock
 ```

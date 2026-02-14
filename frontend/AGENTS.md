@@ -40,7 +40,7 @@ npm run preview
 
 ### Imports
 
-- Use absolute imports for internal modules
+- Use **relative imports** for internal modules (e.g., `./components/...`)
 - Separate imports by type: React → external libraries → internal components/hooks
 
 ```typescript

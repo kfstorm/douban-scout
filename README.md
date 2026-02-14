@@ -22,6 +22,12 @@ A modern web application for exploring Douban movies and TV shows with powerful 
 
 ## Quick Start
 
+### Prerequisites
+
+- **Node.js**: v18 or later
+- **Python**: v3.11 or later
+- **uv**: Fast Python package manager ([Installation Guide](https://github.com/astral-sh/uv))
+
 ### 1. Start Backend
 
 ```bash
@@ -38,40 +44,44 @@ npm install
 npm run dev
 ```
 
-### 3. Access the application
+### 3. Access the Application
 
-- Web UI: <http://localhost:3000>
-- API Docs: <http://localhost:8000/docs>
+- **Web UI**: [http://localhost:3000](http://localhost:3000)
+- **API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### 4. Import your data
+## Data Import
+
+The application supports importing from Douban backup SQLite files at runtime.
 
 Trigger import via API by providing the absolute path to your Douban backup SQLite file:
 
 ```bash
 curl -X POST http://localhost:8000/api/import \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
   -d '{"source_path": "/absolute/path/to/your/backup.sqlite3"}'
 ```
 
 Check progress:
 
 ```bash
-curl http://localhost:8000/api/import/status
+curl -H "X-API-Key: your-api-key" http://localhost:8000/api/import/status
 ```
 
-## Data Import
+*Note: Import runs in the background. Existing data in the database will be replaced.*
 
-The application supports importing from Douban backup SQLite files at runtime.
+## Configuration
 
-- **Async Process**: Import runs in the background.
-- **Clean Slate**: Existing data is replaced.
-- **Performance**: Optimized for large datasets (e.g., 700k+ records).
+The backend behavior can be customized using environment variables:
+
+- `DATABASE_DIR`: Directory containing the SQLite database file (default: `data`).
+- `IMPORT_API_KEY`: Secret key required for import API authentication.
 
 ## Troubleshooting
 
-- **Import fails**: Ensure the source file path is correct and accessible to the backend.
+- **Import fails**: Ensure the source file path is correct and accessible to the backend process.
 - **No data shown**: Ensure the import process has completed.
-- **Port Conflict**: Ensure ports 3000 and 8000 are not in use.
+- **Port Conflict**: Ensure ports 3000 (Frontend) and 8000 (Backend) are not in use.
 
 ## License
 
