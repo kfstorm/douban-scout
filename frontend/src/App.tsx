@@ -5,6 +5,7 @@ import { FilterSidebar } from './components/FilterSidebar';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ImportStatusBanner } from './components/ImportStatus';
 import { useFilterStore } from './store/useFilterStore';
+import { useUrlSync } from './hooks/useUrlSync';
 import { importApi } from './services/api';
 import type { ImportStatus } from './types/movie';
 import './App.css';
@@ -21,6 +22,7 @@ function App() {
     completed_at: null,
   });
   const { resetFilters } = useFilterStore();
+  useUrlSync();
 
   // Poll import status
   useEffect(() => {

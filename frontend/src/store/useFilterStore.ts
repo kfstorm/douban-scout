@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 export interface FilterState {
   type: 'movie' | 'tv' | null;
@@ -18,8 +17,10 @@ export interface FilterState {
   setMaxRating: (rating: number) => void;
   setMinRatingCount: (count: number) => void;
   toggleGenre: (genre: string) => void;
+  setSelectedGenres: (genres: string[]) => void;
   clearGenres: () => void;
   toggleExcludedGenre: (genre: string) => void;
+  setExcludedGenres: (genres: string[]) => void;
   clearExcludedGenres: () => void;
   cycleGenre: (genre: string) => void;
   setSearchQuery: (query: string) => void;
@@ -40,73 +41,70 @@ const initialState = {
   sortOrder: 'desc' as const,
 };
 
-export const useFilterStore = create<FilterState>()(
-  persist(
-    (set) => ({
-      ...initialState,
+export const useFilterStore = create<FilterState>()((set) => ({
+  ...initialState,
 
-      setType: (type) => set({ type }),
+  setType: (type) => set({ type }),
 
-      setMinRating: (minRating) => set({ minRating }),
+  setMinRating: (minRating) => set({ minRating }),
 
-      setMaxRating: (maxRating) => set({ maxRating }),
+  setMaxRating: (maxRating) => set({ maxRating }),
 
-      setMinRatingCount: (minRatingCount) => set({ minRatingCount }),
+  setMinRatingCount: (minRatingCount) => set({ minRatingCount }),
 
-      toggleGenre: (genre) =>
-        set((state) => ({
-          selectedGenres: state.selectedGenres.includes(genre)
-            ? state.selectedGenres.filter((g) => g !== genre)
-            : [...state.selectedGenres, genre],
-          // If a genre is selected, it cannot be excluded
-          excludedGenres: state.excludedGenres.filter((g) => g !== genre),
-        })),
+  toggleGenre: (genre) =>
+    set((state) => ({
+      selectedGenres: state.selectedGenres.includes(genre)
+        ? state.selectedGenres.filter((g) => g !== genre)
+        : [...state.selectedGenres, genre],
+      // If a genre is selected, it cannot be excluded
+      excludedGenres: state.excludedGenres.filter((g) => g !== genre),
+    })),
 
-      clearGenres: () => set({ selectedGenres: [] }),
+  setSelectedGenres: (selectedGenres) => set({ selectedGenres }),
 
-      toggleExcludedGenre: (genre) =>
-        set((state) => ({
-          excludedGenres: state.excludedGenres.includes(genre)
-            ? state.excludedGenres.filter((g) => g !== genre)
-            : [...state.excludedGenres, genre],
-          // If a genre is excluded, it cannot be selected (inclusive)
+  clearGenres: () => set({ selectedGenres: [] }),
+
+  toggleExcludedGenre: (genre) =>
+    set((state) => ({
+      excludedGenres: state.excludedGenres.includes(genre)
+        ? state.excludedGenres.filter((g) => g !== genre)
+        : [...state.excludedGenres, genre],
+      // If a genre is excluded, it cannot be selected (inclusive)
+      selectedGenres: state.selectedGenres.filter((g) => g !== genre),
+    })),
+
+  setExcludedGenres: (excludedGenres) => set({ excludedGenres }),
+
+  clearExcludedGenres: () => set({ excludedGenres: [] }),
+
+  cycleGenre: (genre) =>
+    set((state) => {
+      if (state.selectedGenres.includes(genre)) {
+        // Included -> Excluded
+        return {
           selectedGenres: state.selectedGenres.filter((g) => g !== genre),
-        })),
-
-      clearExcludedGenres: () => set({ excludedGenres: [] }),
-
-      cycleGenre: (genre) =>
-        set((state) => {
-          if (state.selectedGenres.includes(genre)) {
-            // Included -> Excluded
-            return {
-              selectedGenres: state.selectedGenres.filter((g) => g !== genre),
-              excludedGenres: [...state.excludedGenres, genre],
-            };
-          } else if (state.excludedGenres.includes(genre)) {
-            // Excluded -> Unselected
-            return {
-              excludedGenres: state.excludedGenres.filter((g) => g !== genre),
-            };
-          } else {
-            // Unselected -> Included
-            return {
-              selectedGenres: [...state.selectedGenres, genre],
-              excludedGenres: state.excludedGenres.filter((g) => g !== genre),
-            };
-          }
-        }),
-
-      setSearchQuery: (searchQuery) => set({ searchQuery }),
-
-      setSortBy: (sortBy) => set({ sortBy }),
-
-      setSortOrder: (sortOrder) => set({ sortOrder }),
-
-      resetFilters: () => set(initialState),
+          excludedGenres: [...state.excludedGenres, genre],
+        };
+      } else if (state.excludedGenres.includes(genre)) {
+        // Excluded -> Unselected
+        return {
+          excludedGenres: state.excludedGenres.filter((g) => g !== genre),
+        };
+      } else {
+        // Unselected -> Included
+        return {
+          selectedGenres: [...state.selectedGenres, genre],
+          excludedGenres: state.excludedGenres.filter((g) => g !== genre),
+        };
+      }
     }),
-    {
-      name: 'douban-filters',
-    },
-  ),
-);
+
+  setSearchQuery: (searchQuery) => set({ searchQuery }),
+
+  setSortBy: (sortBy) => set({ sortBy }),
+
+  setSortOrder: (sortOrder) => set({ sortOrder }),
+
+  resetFilters: () => set(initialState),
+}));

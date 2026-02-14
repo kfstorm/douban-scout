@@ -1,6 +1,5 @@
 - API Throttling
 - Add import service API authentication. if auth info not provided, import API should always reject the request.
 - Year range filter
-- filter/sorting condition in URL query params, so that users can share specific views
 - some items still have no poster image
 - API performance && DB size (schema optimization, indexing, etc.)
