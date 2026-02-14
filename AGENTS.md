@@ -37,7 +37,7 @@ douban-scout/
 
 ### Pre-commit Hooks
 
-This project uses `pre-commit` to ensure code quality. The hooks run linting for Markdown, Python, and TypeScript, as well as backend unit tests.
+This project uses `pre-commit` to ensure code quality. The hooks run linting for Markdown, Python, and TypeScript, as well as backend and frontend unit tests.
 
 To set up the hooks:
 

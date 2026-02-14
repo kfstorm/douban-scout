@@ -50,6 +50,13 @@ repos:
         files: ^frontend/
         pass_filenames: false
 
+      - id: frontend-test
+        name: Frontend Tests
+        entry: npm --prefix frontend run test
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+
       - id: sync-env-docs
         name: Sync Environment Variables Docs
         entry: ./scripts/sync_env_docs.py --check

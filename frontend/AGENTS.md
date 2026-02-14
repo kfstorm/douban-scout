@@ -105,8 +105,90 @@ export function MovieCard({ movie, onClick }: MovieCardProps) {
 
 ## Testing
 
-- No test framework configured yet
-- If adding tests, use Vitest or Jest with React Testing Library
+We use **Vitest** with React Testing Library for unit testing.
+
+### Test Commands
+
+```bash
+# Run tests once (CI mode)
+npm run test
+
+# Run tests in watch mode (development)
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run tests with UI
+npm run test:ui
+```
+
+### Test File Structure
+
+- Place test files next to the source files they test
+- Naming convention: `*.test.ts` or `*.test.tsx`
+- Example: `useFilterStore.ts` → `useFilterStore.test.ts`
+
+### Testing Patterns
+
+#### Testing Zustand Stores
+
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest';
+import { useFilterStore } from './useFilterStore';
+
+describe('useFilterStore', () => {
+  beforeEach(() => {
+    useFilterStore.setState(useFilterStore.getInitialState());
+  });
+
+  it('should toggle genre', () => {
+    const store = useFilterStore.getState();
+    store.toggleGenre('动作');
+    expect(useFilterStore.getState().selectedGenres).toContain('动作');
+  });
+});
+```
+
+#### Testing React Components
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MovieCard } from './MovieCard';
+
+describe('MovieCard', () => {
+  it('should render movie title', () => {
+    const movie = { id: 1, title: '测试作品', /* ... */ };
+    render(<MovieCard movie={movie} />);
+    expect(screen.getByText('测试作品')).toBeInTheDocument();
+  });
+});
+```
+
+#### Testing Custom Hooks
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { useTheme } from './useTheme';
+
+describe('useTheme', () => {
+  it('should toggle theme', () => {
+    const { result } = renderHook(() => useTheme());
+    act(() => {
+      result.current.toggleTheme();
+    });
+    expect(result.current.isDark).toBe(true);
+  });
+});
+```
+
+### Test Configuration
+
+- Config file: `vitest.config.ts` (extends Vite config)
+- Test environment: `jsdom`
+- Setup file: `src/test/setup.ts` (for global mocks and matchers)
 
 ## Type Checking & Linting
 
