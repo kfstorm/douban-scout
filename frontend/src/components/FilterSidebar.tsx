@@ -298,6 +298,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
               <button
                 onClick={onClose}
                 className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                aria-label="关闭筛选"
               >
                 <XMarkIcon className="w-6 h-6" />
               </button>

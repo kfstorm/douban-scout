@@ -46,6 +46,7 @@ export const NotificationToast: React.FC = () => {
               <button
                 onClick={() => removeNotification(n.id)}
                 className="inline-flex text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                aria-label="关闭通知"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>

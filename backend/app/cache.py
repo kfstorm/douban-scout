@@ -1,4 +1,4 @@
-"""Cache management for the movie explorer."""
+"""Cache management for Douban Scout."""
 
 import asyncio
 import functools

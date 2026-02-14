@@ -19,8 +19,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
   };
 
   const formatCount = (count: number) => {
-    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
-    if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
+    if (count >= 10000) return `${(count / 10000).toFixed(1)} 万`;
     return count.toString();
   };
 
@@ -113,7 +112,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         </h3>
 
         <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-          <span>{movie.year || 'N/A'}</span>
+          <span>{movie.year || '未知年份'}</span>
           <span className="flex items-center gap-1">
             <UsersIcon className="w-4 h-4" />
             {formatCount(movie.rating_count)}

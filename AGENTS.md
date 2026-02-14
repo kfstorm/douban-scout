@@ -1,4 +1,4 @@
-# Douban Movie Explorer - Root
+# 瓣影寻踪 (Douban Scout) - Root
 
 This file provides high-level project information. For detailed coding guidelines, check subdirectory-specific AGENTS.md files.
 
@@ -27,7 +27,7 @@ When working on a specific part of the codebase, see the dedicated AGENTS.md fil
 ### File Structure
 
 ```text
-douban-movie-explorer/
+douban-scout/
 ├── backend/                     # Python/FastAPI backend
 ├── frontend/                    # React/TypeScript frontend
 └── scripts/                     # Project-wide scripts
@@ -60,3 +60,11 @@ This script handles:
 - Backend: Ruff check (fix) and format
 - Frontend: ESLint fix and Prettier format
 - Markdown: markdownlint-cli2 fix
+
+### Configuration Sync
+
+If you modify `backend/app/config.py`, you must run the following script to update the environment variable documentation in `README.md`:
+
+```bash
+scripts/sync_env_docs.py
+```

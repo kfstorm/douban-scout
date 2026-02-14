@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="Douban Movie Explorer API",
+    title="Douban Scout API",
     description="API for exploring Douban movies and TV shows",
     version="1.0.0",
     lifespan=lifespan,

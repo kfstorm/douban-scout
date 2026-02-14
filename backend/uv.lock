@@ -99,7 +99,7 @@ wheels = [
 ]
 
 [[package]]
-name = "douban-movie-explorer-backend"
+name = "douban-scout-backend"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [

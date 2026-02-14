@@ -1,7 +1,7 @@
 [project]
-name = "douban-movie-explorer-backend"
+name = "douban-scout-backend"
 version = "1.0.0"
-description = "FastAPI backend for Douban Movie Explorer"
+description = "FastAPI backend for Douban Scout"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
