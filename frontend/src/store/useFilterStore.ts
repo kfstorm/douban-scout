@@ -9,6 +9,7 @@ export interface FilterState {
   maxYear: number | null;
   selectedGenres: string[];
   excludedGenres: string[];
+  selectedRegions: string[];
   searchQuery: string;
   sortBy: 'rating' | 'rating_count' | 'year';
   sortOrder: 'asc' | 'desc';
@@ -27,6 +28,9 @@ export interface FilterState {
   setExcludedGenres: (genres: string[]) => void;
   clearExcludedGenres: () => void;
   cycleGenre: (genre: string) => void;
+  toggleRegion: (region: string) => void;
+  setSelectedRegions: (regions: string[]) => void;
+  clearRegions: () => void;
   setSearchQuery: (query: string) => void;
   setSortBy: (sortBy: 'rating' | 'rating_count' | 'year') => void;
   setSortOrder: (order: 'asc' | 'desc') => void;
@@ -42,6 +46,7 @@ const initialState = {
   maxYear: null as number | null,
   selectedGenres: [] as string[],
   excludedGenres: [] as string[],
+  selectedRegions: [] as string[],
   searchQuery: '',
   sortBy: 'rating' as const,
   sortOrder: 'desc' as const,
@@ -109,6 +114,17 @@ export const useFilterStore = create<FilterState>()((set) => ({
         };
       }
     }),
+
+  toggleRegion: (region) =>
+    set((state) => ({
+      selectedRegions: state.selectedRegions.includes(region)
+        ? state.selectedRegions.filter((r) => r !== region)
+        : [...state.selectedRegions, region],
+    })),
+
+  setSelectedRegions: (selectedRegions) => set({ selectedRegions }),
+
+  clearRegions: () => set({ selectedRegions: [] }),
 
   setSearchQuery: (searchQuery) => set({ searchQuery }),
 

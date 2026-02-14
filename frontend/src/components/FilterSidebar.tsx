@@ -1,10 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog } from '@headlessui/react';
-import { XMarkIcon, FunnelIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import {
+  XMarkIcon,
+  FunnelIcon,
+  InformationCircleIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline';
 import { useQuery } from '@tanstack/react-query';
 import { useFilterStore } from '../store/useFilterStore';
 import { moviesApi } from '../services/api';
 import { SearchBar } from './SearchBar';
+
+const MAX_REGION_DISPLAY_ITEMS = 20;
 
 interface FilterSidebarProps {
   isOpen: boolean;
@@ -21,6 +28,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
     maxYear,
     selectedGenres,
     excludedGenres,
+    selectedRegions,
     sortBy,
     sortOrder,
     setType,
@@ -29,6 +37,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
     setMinRatingCount,
     setMinYear,
     setMaxYear,
+    toggleRegion,
+    clearRegions,
     clearGenres,
     cycleGenre,
     clearExcludedGenres,
@@ -37,10 +47,20 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
     resetFilters,
   } = useFilterStore();
 
+  const [regionSearch, setRegionSearch] = useState('');
+  const [genreSearch, setGenreSearch] = useState('');
+
   // Fetch genres from backend
   const { data: genresData, isLoading: isLoadingGenres } = useQuery({
     queryKey: ['genres', type],
     queryFn: () => moviesApi.getGenres(type || undefined),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch regions from backend
+  const { data: regionsData, isLoading: isLoadingRegions } = useQuery({
+    queryKey: ['regions', type],
+    queryFn: () => moviesApi.getRegions(type || undefined),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -212,6 +232,70 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
         </div>
       </div>
 
+      {/* Regions */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white">地区筛选</h3>
+          {selectedRegions.length > 0 && (
+            <button
+              onClick={clearRegions}
+              className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+            >
+              清除 ({selectedRegions.length})
+            </button>
+          )}
+        </div>
+
+        {/* Region Search */}
+        <div className="relative mb-3">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="搜索地区..."
+            value={regionSearch}
+            onChange={(e) => setRegionSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          />
+        </div>
+
+        <div className="max-h-48 overflow-y-auto pr-2 -mr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+          {isLoadingRegions ? (
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="px-3 py-1 rounded-full text-xs bg-gray-200 dark:bg-gray-700 animate-pulse w-12 h-6"
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {regionsData
+                ?.filter((r) => r.region.toLowerCase().includes(regionSearch.toLowerCase()))
+                .slice(0, MAX_REGION_DISPLAY_ITEMS)
+                .map((regionItem) => {
+                  const isSelected = selectedRegions.includes(regionItem.region);
+
+                  return (
+                    <button
+                      key={regionItem.region}
+                      onClick={() => toggleRegion(regionItem.region)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        isSelected
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                      title={`${regionItem.region}: ${regionItem.count} 部作品`}
+                    >
+                      {regionItem.region}
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Genres */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -233,43 +317,60 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
             </button>
           )}
         </div>
-        {isLoadingGenres ? (
-          <div className="flex flex-wrap gap-2">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div
-                key={i}
-                className="px-3 py-1 rounded-full text-xs bg-gray-200 dark:bg-gray-700 animate-pulse w-12 h-6"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {genresData?.map((genreItem) => {
-              const isSelected = selectedGenres.includes(genreItem.genre);
-              const isExcluded = excludedGenres.includes(genreItem.genre);
 
-              return (
-                <button
-                  key={genreItem.genre}
-                  onClick={() => cycleGenre(genreItem.genre)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    isSelected
-                      ? 'bg-primary-500 text-white'
-                      : isExcluded
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                  title={`${genreItem.genre}: ${genreItem.count} 部作品${
-                    isSelected ? ' (包含)' : isExcluded ? ' (排除)' : ''
-                  }`}
-                >
-                  {isExcluded && <span className="mr-1">✕</span>}
-                  {genreItem.genre}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Genre Search */}
+        <div className="relative mb-3">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="搜索类型..."
+            value={genreSearch}
+            onChange={(e) => setGenreSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          />
+        </div>
+
+        <div className="max-h-48 overflow-y-auto pr-2 -mr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+          {isLoadingGenres ? (
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="px-3 py-1 rounded-full text-xs bg-gray-200 dark:bg-gray-700 animate-pulse w-12 h-6"
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {genresData
+                ?.filter((g) => g.genre.toLowerCase().includes(genreSearch.toLowerCase()))
+                .map((genreItem) => {
+                  const isSelected = selectedGenres.includes(genreItem.genre);
+                  const isExcluded = excludedGenres.includes(genreItem.genre);
+
+                  return (
+                    <button
+                      key={genreItem.genre}
+                      onClick={() => cycleGenre(genreItem.genre)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        isSelected
+                          ? 'bg-primary-500 text-white'
+                          : isExcluded
+                            ? 'bg-red-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                      title={`${genreItem.genre}: ${genreItem.count} 部作品${
+                        isSelected ? ' (包含)' : isExcluded ? ' (排除)' : ''
+                      }`}
+                    >
+                      {isExcluded && <span className="mr-1">✕</span>}
+                      {genreItem.genre}
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Reset */}

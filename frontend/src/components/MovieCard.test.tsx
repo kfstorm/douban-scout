@@ -16,6 +16,7 @@ describe('MovieCard', () => {
     rating_count: 150000,
     type: 'movie',
     genres: ['动作', '科幻', '冒险'],
+    regions: ['美国', '英国'],
     updated_at: Date.now() / 1000,
   };
 
@@ -29,15 +30,16 @@ describe('MovieCard', () => {
     expect(headingTitle).toBeInTheDocument();
   });
 
-  it('should render year', () => {
+  it('should render year and regions', () => {
     render(<MovieCard movie={mockMovie} />);
     expect(screen.getByText('2020')).toBeInTheDocument();
+    expect(screen.getByText('美国 / 英国')).toBeInTheDocument();
   });
 
   it('should render unknown year when year is null', () => {
     const movieWithoutYear = { ...mockMovie, year: null };
     render(<MovieCard movie={movieWithoutYear} />);
-    expect(screen.getByText('未知年份')).toBeInTheDocument();
+    expect(screen.getByText(/未知年份/)).toBeInTheDocument();
   });
 
   it('should render rating', () => {
@@ -104,6 +106,7 @@ describe('MovieCard', () => {
 
     expect(screen.getByText('作品详情')).toBeInTheDocument();
     expect(screen.getByText('评分人数: 150,000')).toBeInTheDocument();
+    expect(screen.getByText(/制片国家\/地区: 美国, 英国/)).toBeInTheDocument();
   });
 
   it('should show all genres in tooltip', () => {

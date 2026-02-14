@@ -6,6 +6,7 @@ export interface Movie {
   rating_count: number;
   type: 'movie' | 'tv';
   genres: string[];
+  regions: string[];
   updated_at: number | null;
 }
 
@@ -20,11 +21,17 @@ export interface GenreCount {
   count: number;
 }
 
+export interface RegionCount {
+  region: string;
+  count: number;
+}
+
 export interface StatsResponse {
   total_movies: number;
   total_tv: number;
   avg_rating: number;
   total_genres: number;
+  total_regions: number;
 }
 
 export interface ImportStatus {

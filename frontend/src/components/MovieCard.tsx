@@ -101,6 +101,9 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
           <div className="text-gray-300 mt-1">数据更新时间: {timeAgo(movie.updated_at)}</div>
           <div className="text-gray-300 mt-1">评分人数: {movie.rating_count.toLocaleString()}</div>
           <div className="text-gray-300 mt-1 leading-relaxed break-words">
+            制片国家/地区: {movie.regions.join(', ') || '未知'}
+          </div>
+          <div className="text-gray-300 mt-1 leading-relaxed break-words">
             全部类型: {movie.genres.join(', ') || '无'}
           </div>
         </div>
@@ -111,12 +114,17 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
           {movie.title}
         </h3>
 
-        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-          <span>{movie.year || '未知年份'}</span>
-          <span className="flex items-center gap-1">
-            <UsersIcon className="w-4 h-4" />
-            {formatCount(movie.rating_count)}
-          </span>
+        <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400 mb-3">
+          <div className="flex items-center justify-between">
+            <span>{movie.year || '未知年份'}</span>
+            <span className="flex items-center gap-1">
+              <UsersIcon className="w-3.5 h-3.5" />
+              {formatCount(movie.rating_count)}
+            </span>
+          </div>
+          <div className="truncate">
+            {movie.regions.length > 0 ? movie.regions.join(' / ') : '未知地区'}
+          </div>
         </div>
 
         {/* Genres */}

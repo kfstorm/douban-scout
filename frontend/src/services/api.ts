@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { MoviesListResponse, GenreCount, StatsResponse } from '../types/movie';
+import type { MoviesListResponse, GenreCount, RegionCount, StatsResponse } from '../types/movie';
 import { useNotificationStore } from '../store/useNotificationStore';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -33,6 +33,7 @@ export interface MoviesParams {
   max_year?: number;
   genres?: string[];
   exclude_genres?: string[];
+  regions?: string[];
   search?: string;
   sort_by?: 'rating' | 'rating_count' | 'year';
   sort_order?: 'asc' | 'desc';
@@ -45,6 +46,7 @@ export const moviesApi = {
         ...params,
         genres: params.genres?.join(','),
         exclude_genres: params.exclude_genres?.join(','),
+        regions: params.regions?.join(','),
       },
     });
     return response.data;
@@ -52,6 +54,13 @@ export const moviesApi = {
 
   getGenres: async (type?: 'movie' | 'tv'): Promise<GenreCount[]> => {
     const response = await api.get('/movies/genres', {
+      params: { type },
+    });
+    return response.data;
+  },
+
+  getRegions: async (type?: 'movie' | 'tv'): Promise<RegionCount[]> => {
+    const response = await api.get('/movies/regions', {
       params: { type },
     });
     return response.data;

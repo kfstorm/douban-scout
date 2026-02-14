@@ -12,6 +12,7 @@ describe('useFilterStore', () => {
       maxYear: null,
       selectedGenres: [],
       excludedGenres: [],
+      selectedRegions: [],
       searchQuery: '',
       sortBy: 'rating',
       sortOrder: 'desc',
@@ -29,6 +30,7 @@ describe('useFilterStore', () => {
       expect(state.maxYear).toBeNull();
       expect(state.selectedGenres).toEqual([]);
       expect(state.excludedGenres).toEqual([]);
+      expect(state.selectedRegions).toEqual([]);
       expect(state.searchQuery).toBe('');
       expect(state.sortBy).toBe('rating');
       expect(state.sortOrder).toBe('desc');
@@ -185,6 +187,36 @@ describe('useFilterStore', () => {
     });
   });
 
+  describe('Region Management', () => {
+    describe('toggleRegion', () => {
+      it('should add region to selected regions', () => {
+        useFilterStore.getState().toggleRegion('中国大陆');
+        expect(useFilterStore.getState().selectedRegions).toContain('中国大陆');
+      });
+
+      it('should remove region from selected regions if already selected', () => {
+        useFilterStore.getState().toggleRegion('中国大陆');
+        useFilterStore.getState().toggleRegion('中国大陆');
+        expect(useFilterStore.getState().selectedRegions).not.toContain('中国大陆');
+      });
+    });
+
+    describe('setSelectedRegions', () => {
+      it('should set selected regions array', () => {
+        useFilterStore.getState().setSelectedRegions(['美国', '日本']);
+        expect(useFilterStore.getState().selectedRegions).toEqual(['美国', '日本']);
+      });
+    });
+
+    describe('clearRegions', () => {
+      it('should clear all selected regions', () => {
+        useFilterStore.getState().setSelectedRegions(['美国', '日本']);
+        useFilterStore.getState().clearRegions();
+        expect(useFilterStore.getState().selectedRegions).toEqual([]);
+      });
+    });
+  });
+
   describe('Search', () => {
     it('should set search query', () => {
       useFilterStore.getState().setSearchQuery('测试');
@@ -220,6 +252,7 @@ describe('useFilterStore', () => {
       useFilterStore.getState().setMaxYear(2023);
       useFilterStore.getState().setSelectedGenres(['动作']);
       useFilterStore.getState().setExcludedGenres(['恐怖']);
+      useFilterStore.getState().setSelectedRegions(['美国']);
       useFilterStore.getState().setSearchQuery('测试');
       useFilterStore.getState().setSortBy('year');
       useFilterStore.getState().setSortOrder('asc');
@@ -235,6 +268,7 @@ describe('useFilterStore', () => {
       expect(state.maxYear).toBeNull();
       expect(state.selectedGenres).toEqual([]);
       expect(state.excludedGenres).toEqual([]);
+      expect(state.selectedRegions).toEqual([]);
       expect(state.searchQuery).toBe('');
       expect(state.sortBy).toBe('rating');
       expect(state.sortOrder).toBe('desc');
