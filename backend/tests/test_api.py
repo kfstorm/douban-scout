@@ -425,7 +425,7 @@ class TestGenresEndpoint:
             assert genre["count"] == sum(
                 1
                 for m in movies_with_genres
-                if m.type == "movie" and genre["genre"] in [g.genre for g in m.genres]
+                if m.type == "movie" and genre["genre"] in [g.genre_obj.name for g in m.genres]
             )
 
     def test_get_genres_filter_by_tv(self, client: TestClient, movies_with_genres: list):
@@ -437,7 +437,7 @@ class TestGenresEndpoint:
             assert genre["count"] == sum(
                 1
                 for m in movies_with_genres
-                if m.type == "tv" and genre["genre"] in [g.genre for g in m.genres]
+                if m.type == "tv" and genre["genre"] in [g.genre_obj.name for g in m.genres]
             )
 
 

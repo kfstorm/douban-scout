@@ -7,11 +7,12 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app import database as app_database
-from app.database import Base, Movie, MovieGenre, get_db
+from app.database import Base, Genre, Movie, MovieGenre, get_db
 from app.main import app
 from app.services.import_service import ImportService
 
@@ -39,10 +40,12 @@ def temp_import_dir(temp_dir: str) -> str:
     return str(import_dir)
 
 
-@pytest.fixture(scope="session")
-def temp_db_path(temp_data_dir: str) -> str:
-    """Get path to temporary database."""
-    return str(Path(temp_data_dir) / "test_movies.db")
+@pytest.fixture
+def temp_db_path(temp_data_dir: str, request: pytest.FixtureRequest) -> str:
+    """Get path to unique temporary database for each test."""
+    test_id = request.node.nodeid.replace("/", "_").replace(":", "_")
+    db_path = Path(temp_data_dir) / f"test_{test_id}.db"
+    return str(db_path)
 
 
 @pytest.fixture(scope="session")
@@ -195,9 +198,21 @@ def test_engine(temp_db_path: str):
     engine = create_engine(
         f"sqlite:///{temp_db_path}",
         connect_args={"check_same_thread": False},
+        poolclass=NullPool,
     )
     Base.metadata.create_all(bind=engine)
+
+    # Create FTS5 table for tests
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE VIRTUAL TABLE movie_search USING "
+                "fts5(title, content='movies', content_rowid='id')"
+            )
+        )
+
     yield engine
+
     Base.metadata.drop_all(bind=engine)
 
 
@@ -213,12 +228,16 @@ def db_session(test_engine) -> Generator[Session, None, None]:
 
 
 @pytest.fixture
-def client(test_engine, db_session: Session) -> Generator[TestClient, None, None]:
+def client(
+    test_engine, db_session: Session, temp_db_path: str
+) -> Generator[TestClient, None, None]:
     """Create test client with database override."""
     original_engine = app_database.engine
     original_session_factory = app_database.SessionLocal
+    original_db_url = app_database.DATABASE_URL
 
     app_database.engine = test_engine
+    app_database.DATABASE_URL = f"sqlite:///{temp_db_path}"
     app_database.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
     def override_get_db():
@@ -234,6 +253,7 @@ def client(test_engine, db_session: Session) -> Generator[TestClient, None, None
 
     app.dependency_overrides.clear()
     app_database.engine = original_engine
+    app_database.DATABASE_URL = original_db_url
     app_database.SessionLocal = original_session_factory
 
 
@@ -314,6 +334,10 @@ def sample_movies(db_session: Session) -> list[Movie]:
         db_session.add(movie)
     db_session.commit()
 
+    # Update FTS5 index for tests
+    db_session.execute(text("INSERT INTO movie_search(rowid, title) SELECT id, title FROM movies"))
+    db_session.commit()
+
     for movie in movies:
         db_session.refresh(movie)
 
@@ -323,17 +347,28 @@ def sample_movies(db_session: Session) -> list[Movie]:
 @pytest.fixture
 def movies_with_genres(db_session: Session, sample_movies: list[Movie]) -> list[Movie]:
     """Add genres to sample movies."""
+    # First create unique genres
+    genre_names = {"剧情", "犯罪", "喜剧", "动作", "悬疑"}
+    genre_map = {}
+    for name in genre_names:
+        genre = Genre(name=name)
+        db_session.add(genre)
+    db_session.flush()
+
+    genres_list = db_session.query(Genre).all()
+    genre_map = {g.name: g.id for g in genres_list}
+
     genres_data = [
-        (sample_movies[0].id, "剧情"),
-        (sample_movies[0].id, "犯罪"),
-        (sample_movies[1].id, "喜剧"),
-        (sample_movies[2].id, "动作"),
-        (sample_movies[2].id, "犯罪"),
-        (sample_movies[3].id, "剧情"),
-        (sample_movies[3].id, "悬疑"),
-        (sample_movies[4].id, "喜剧"),
+        (sample_movies[0].id, genre_map["剧情"]),
+        (sample_movies[0].id, genre_map["犯罪"]),
+        (sample_movies[1].id, genre_map["喜剧"]),
+        (sample_movies[2].id, genre_map["动作"]),
+        (sample_movies[2].id, genre_map["犯罪"]),
+        (sample_movies[3].id, genre_map["剧情"]),
+        (sample_movies[3].id, genre_map["悬疑"]),
+        (sample_movies[4].id, genre_map["喜剧"]),
     ]
-    for movie_id, genre in genres_data:
-        db_session.add(MovieGenre(movie_id=movie_id, genre=genre))
+    for movie_id, genre_id in genres_data:
+        db_session.add(MovieGenre(movie_id=movie_id, genre_id=genre_id))
     db_session.commit()
     return sample_movies

@@ -77,7 +77,8 @@ class TestImportService:
             if status["status"] in ("completed", "failed"):
                 break
 
-        db_session.expire_all()
+        # Close session to force new connection that sees the swapped file
+        db_session.close()
         final_count = db_session.query(Movie).count()
         assert final_count == 7
 
@@ -98,8 +99,9 @@ class TestImportService:
         db_session.expire_all()
         movie = db_session.query(Movie).filter(Movie.douban_id == "1001").first()
         assert movie is not None
-        assert "剧情" in [g.genre for g in movie.genres]
-        assert "犯罪" in [g.genre for g in movie.genres]
+        genres = [g.genre_obj.name for g in movie.genres]
+        assert "剧情" in genres
+        assert "犯罪" in genres
 
     def test_import_extracts_genres_from_subtitle(
         self, client, populated_source_db, temp_source_db_path: str, db_session
@@ -118,7 +120,7 @@ class TestImportService:
         db_session.expire_all()
         movie = db_session.query(Movie).filter(Movie.douban_id == "1449961").first()
         assert movie is not None
-        genres = [g.genre for g in movie.genres]
+        genres = [g.genre_obj.name for g in movie.genres]
         assert "纪录片" in genres
         assert "音乐" in genres
 

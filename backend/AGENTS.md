@@ -25,8 +25,8 @@ uv sync
 # Run development server
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Run with custom database
-DATABASE_URL=sqlite:///data/movies.db uv run uvicorn app.main:app --reload
+# Run with custom database directory
+DATABASE_DIR=custom_data uv run uvicorn app.main:app --reload
 
 # Lint and format
 scripts/lint.sh      # ruff check + mypy
@@ -42,7 +42,7 @@ PYTHONPATH=. uv run pytest tests/test_api.py -v
 
 ## Environment Variables
 
-- `DATABASE_URL`: SQLite connection string (default: `sqlite:///data/movies.db`)
+- `DATABASE_DIR`: Directory containing `movies.db` (default: `data`)
 
 ## Code Style Guidelines
 

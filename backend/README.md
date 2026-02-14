@@ -155,4 +155,4 @@ curl http://localhost:8000/api/import/status
 
 ## Environment Variables
 
-- `DATABASE_URL`: SQLite database path (default: `sqlite:///app/data/movies.db`)
+- `DATABASE_DIR`: Directory containing `movies.db` (default: `data`)

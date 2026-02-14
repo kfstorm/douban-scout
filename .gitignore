@@ -34,6 +34,7 @@ wheels/
 *.db-shm
 *.db-wal
 *.sqlite3
+backend/data/
 
 # IDE
 .idea/
