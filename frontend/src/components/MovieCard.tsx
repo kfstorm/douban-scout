@@ -56,13 +56,11 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         />
 
         {/* Rating badge */}
-        {movie.rating && (
-          <div
-            className={`absolute top-2 right-2 ${getRatingColor(movie.rating)} text-white text-sm font-bold px-2 py-1 rounded`}
-          >
-            {movie.rating.toFixed(1)}
-          </div>
-        )}
+        <div
+          className={`absolute top-2 right-2 ${getRatingColor(movie.rating)} text-white text-sm font-bold px-2 py-1 rounded`}
+        >
+          {movie.rating ? movie.rating.toFixed(1) : '无'}
+        </div>
       </div>
 
       {/* Info icon with tooltip - Moved outside overflow-hidden container */}
