@@ -58,7 +58,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
       className="group block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 relative"
       onMouseLeave={() => setShowInfo(false)}
     >
-      <div className="aspect-[2/3] relative rounded-t-lg">
+      <div className="aspect-[2/3] relative rounded-t-lg overflow-hidden">
         <PosterImage
           id={movie.id}
           title={movie.title}
