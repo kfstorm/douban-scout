@@ -32,11 +32,11 @@ class Movie(Base):  # type: ignore[misc, valid-type]
     rating = Column(Float, nullable=True, index=True)
     rating_count = Column(Integer, default=0, index=True)
     type = Column(String(16), nullable=False, index=True)
-    poster_url = Column(Text, nullable=True)
     douban_url = Column(Text, nullable=False)
     updated_at = Column(Integer, nullable=True)
 
     genres = relationship("MovieGenre", back_populates="movie", cascade="all, delete-orphan")  # type: ignore[var-annotated]
+    posters = relationship("MoviePoster", back_populates="movie", cascade="all, delete-orphan")  # type: ignore[var-annotated]
 
 
 class MovieGenre(Base):  # type: ignore[misc, valid-type]
@@ -48,6 +48,17 @@ class MovieGenre(Base):  # type: ignore[misc, valid-type]
     genre = Column(String(32), primary_key=True, index=True)
 
     movie = relationship("Movie", back_populates="genres")  # type: ignore[var-annotated]
+
+
+class MoviePoster(Base):  # type: ignore[misc, valid-type]
+    """Poster URL model for movies."""
+
+    __tablename__ = "movie_posters"
+
+    movie_id = Column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True)
+    url = Column(String(512), primary_key=True)
+
+    movie = relationship("Movie", back_populates="posters")  # type: ignore[var-annotated]
 
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/movies.db")

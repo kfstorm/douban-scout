@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.database import Movie, get_db
+from app.database import Movie, MoviePoster, get_db
 from app.schemas import GenreCount, MoviesListResponse, StatsResponse
 from app.services.movie_service import movie_service
 
@@ -73,6 +73,25 @@ def get_stats(
     return movie_service.get_stats(db)
 
 
+def _get_poster_candidates(base_urls: list[str]) -> list[str]:
+    """Generate all candidate URLs including mirror fallbacks."""
+    all_candidates = []
+    for base_url in base_urls:
+        all_candidates.append(base_url)
+        # If it's an img[0-9]+.doubanio.com URL, add fallbacks
+        match = re.search(r"img([0-9]+)\.doubanio\.com", base_url)
+        if match:
+            original_host = match.group(0)
+            # Douban uses img1, img2, and img3 as reliable mirrors.
+            for i in ["1", "2", "3"]:
+                new_host = f"img{i}.doubanio.com"
+                if new_host != original_host:
+                    fallback_url = base_url.replace(original_host, new_host)
+                    if fallback_url not in all_candidates:
+                        all_candidates.append(fallback_url)
+    return all_candidates
+
+
 @router.get("/{douban_id}/poster")
 async def get_poster(
     douban_id: str,
@@ -80,15 +99,18 @@ async def get_poster(
 ) -> StreamingResponse:
     """Proxy poster images from Douban to bypass CORS restrictions.
 
-    Fetches the poster_url from the database for the given douban_id,
-    then proxies the image from Douban's CDN.
+    Fetches poster URLs from the database for the given douban_id,
+    then proxies the first working image from Douban's CDN.
     """
-    # Fetch poster_url from database
+    # Fetch movie and all poster URLs from database
     movie = db.query(Movie).filter(Movie.douban_id == douban_id).first()
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
 
-    if not movie.poster_url:
+    posters = db.query(MoviePoster).filter(MoviePoster.movie_id == movie.id).all()
+    poster_urls = [p.url for p in posters]
+
+    if not poster_urls:
         raise HTTPException(status_code=404, detail="No poster available for this movie")
 
     headers = {
@@ -102,23 +124,9 @@ async def get_poster(
 
     try:
         async with httpx.AsyncClient() as client:
-            # Try original URL first
-            urls_to_try = [movie.poster_url]
-
-            # If it's an img[0-9]+.doubanio.com URL, add fallbacks
-            match = re.search(r"img([0-9]+)\.doubanio\.com", movie.poster_url)
-            if match:
-                original_host = match.group(0)
-                # Douban uses img1, img2, and img3 as reliable mirrors.
-                # Other numbers (like img9) often serve JS challenges.
-                for i in ["1", "2", "3"]:
-                    new_host = f"img{i}.doubanio.com"
-                    if new_host != original_host:
-                        fallback_url = movie.poster_url.replace(original_host, new_host)
-                        if fallback_url not in urls_to_try:
-                            urls_to_try.append(fallback_url)
-
             last_exception = None
+            urls_to_try = _get_poster_candidates(poster_urls)
+
             for url in urls_to_try:
                 try:
                     response = await client.get(url, headers=headers, timeout=10.0)

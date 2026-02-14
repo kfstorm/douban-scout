@@ -256,7 +256,6 @@ def sample_movies(db_session: Session) -> list[Movie]:
             rating=8.0,
             rating_count=1000,
             type="movie",
-            poster_url="http://example.com/p1.jpg",
             douban_url="https://movie.douban.com/subject/2001/",
         ),
         Movie(
@@ -267,7 +266,6 @@ def sample_movies(db_session: Session) -> list[Movie]:
             rating=7.0,
             rating_count=500,
             type="movie",
-            poster_url="http://example.com/p2.jpg",
             douban_url="https://movie.douban.com/subject/2002/",
         ),
         Movie(
@@ -278,7 +276,6 @@ def sample_movies(db_session: Session) -> list[Movie]:
             rating=8.5,
             rating_count=2000,
             type="movie",
-            poster_url="http://example.com/p3.jpg",
             douban_url="https://movie.douban.com/subject/2003/",
         ),
         Movie(
@@ -289,7 +286,6 @@ def sample_movies(db_session: Session) -> list[Movie]:
             rating=9.0,
             rating_count=3000,
             type="tv",
-            poster_url="http://example.com/p4.jpg",
             douban_url="https://movie.douban.com/subject/3001/",
         ),
         Movie(
@@ -300,7 +296,6 @@ def sample_movies(db_session: Session) -> list[Movie]:
             rating=7.5,
             rating_count=1500,
             type="tv",
-            poster_url="http://example.com/p5.jpg",
             douban_url="https://movie.douban.com/subject/3002/",
         ),
         Movie(
@@ -311,7 +306,6 @@ def sample_movies(db_session: Session) -> list[Movie]:
             rating=None,
             rating_count=0,
             type="movie",
-            poster_url=None,
             douban_url="https://movie.douban.com/subject/4001/",
         ),
     ]

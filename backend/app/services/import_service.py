@@ -11,7 +11,7 @@ from typing import ClassVar
 from sqlalchemy.orm import Session
 
 from app import database as app_db
-from app.database import Movie, MovieGenre
+from app.database import Movie, MovieGenre, MoviePoster
 from app.schemas import ImportStatus
 
 # Configure logger
@@ -155,7 +155,7 @@ class ImportService:
 
                         # Initialize defaults
                         rating_count = 0
-                        poster_url = None
+                        poster_urls: set[str] = set()
                         genres: set[str] = set()
 
                         # Parse raw_data JSON
@@ -170,13 +170,23 @@ class ImportService:
                                     if isinstance(rating_info, dict):
                                         rating_count = rating_info.get("count", 0)
 
-                                    # Extract poster URL
+                                    # Extract poster URLs
                                     pic = detail.get("pic", {})
                                     if isinstance(pic, dict):
-                                        poster_url = pic.get("normal") or pic.get("large")
+                                        for key in ["normal", "large"]:
+                                            if pic.get(key):
+                                                poster_urls.add(pic[key])
 
-                                    if not poster_url:
-                                        poster_url = detail.get("cover_url")
+                                    cover_url = detail.get("cover_url")
+                                    if cover_url:
+                                        poster_urls.add(cover_url)
+
+                                    # Extract from photos list
+                                    photos = detail.get("photos", [])
+                                    if isinstance(photos, list):
+                                        for photo_url in photos:
+                                            if isinstance(photo_url, str):
+                                                poster_urls.add(photo_url)
 
                                     # Extract genres from card_subtitle or subtitle
                                     card_subtitle = detail.get("card_subtitle") or detail.get(
@@ -205,9 +215,9 @@ class ImportService:
                             "rating": rating,
                             "rating_count": rating_count,
                             "type": item_type,
-                            "poster_url": poster_url,
                             "douban_url": douban_url,
                             "genres": list(genres),
+                            "posters": list(poster_urls),
                             "updated_at": int(update_time) if update_time else None,
                         }
 
@@ -273,6 +283,7 @@ class ImportService:
         try:
             for movie_data in movies:
                 genres = movie_data.pop("genres", [])
+                posters = movie_data.pop("posters", [])
 
                 movie = Movie(**movie_data)
                 db.add(movie)
@@ -280,6 +291,9 @@ class ImportService:
 
                 for genre in genres:
                     db.add(MovieGenre(movie_id=movie.id, genre=genre))
+
+                for poster_url in posters:
+                    db.add(MoviePoster(movie_id=movie.id, url=poster_url))
 
             db.flush()
             db.expunge_all()

@@ -158,11 +158,11 @@ class TestImportService:
         db_session.expire_all()
         movie1 = db_session.query(Movie).filter(Movie.douban_id == "1001").first()
         assert movie1 is not None
-        assert movie1.poster_url == "http://example.com/p1.jpg"
+        assert "http://example.com/p1.jpg" in [p.url for p in movie1.posters]
 
         movie2 = db_session.query(Movie).filter(Movie.douban_id == "1002").first()
         assert movie2 is not None
-        assert movie2.poster_url == "http://example.com/p2.jpg"
+        assert "http://example.com/p2.jpg" in [p.url for p in movie2.posters]
 
     def test_import_handles_null_rating(
         self, client, populated_source_db, temp_source_db_path: str, db_session
@@ -201,7 +201,7 @@ class TestImportService:
         movie = db_session.query(Movie).filter(Movie.douban_id == "1005").first()
         assert movie is not None
         assert movie.rating_count == 0
-        assert movie.poster_url is None
+        assert len(movie.posters) == 0
         assert len(movie.genres) == 0
 
     def test_import_extracts_poster_url_from_cover_url_fallback(
@@ -221,7 +221,7 @@ class TestImportService:
         db_session.expire_all()
         movie = db_session.query(Movie).filter(Movie.douban_id == "1300613").first()
         assert movie is not None
-        assert movie.poster_url == "https://example.com/cover.jpg"
+        assert "https://example.com/cover.jpg" in [p.url for p in movie.posters]
 
     def test_import_rollback_on_failure(
         self, client, sample_movies, populated_source_db, temp_source_db_path: str, db_session
