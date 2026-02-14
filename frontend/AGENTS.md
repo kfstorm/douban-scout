@@ -190,6 +190,10 @@ describe('useTheme', () => {
 - Test environment: `jsdom`
 - Setup file: `src/test/setup.ts` (for global mocks and matchers)
 
+### Testing Policy
+
+See [root AGENTS.md](../AGENTS.md#testing-policy) for general testing guidelines.
+
 ## Type Checking & Linting
 
 ```bash

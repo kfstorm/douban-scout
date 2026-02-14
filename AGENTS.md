@@ -68,3 +68,14 @@ If you modify `backend/app/config.py`, you must run the following script to upda
 ```bash
 scripts/sync_env_docs.py
 ```
+
+### Testing Policy
+
+**When modifying logic, always add or update corresponding test cases.**
+
+- **New features**: Add tests covering the new functionality
+- **Bug fixes**: Add a regression test that would have caught the bug
+- **Logic changes**: Update existing tests to reflect the new behavior
+- **Refactoring**: Ensure existing tests still pass (they validate behavior preservation)
+
+Test files are co-located with source files. See subdirectory AGENTS.md files for language-specific testing guidelines.

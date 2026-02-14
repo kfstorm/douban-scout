@@ -179,6 +179,10 @@ def get_movies(db: Session = Depends(get_db)) -> MoviesListResponse: ...
 - Follow `test_*.py` and `Test*` conventions
 - Tests must use autouse fixtures for database isolation
 
+### Testing Policy
+
+See [root AGENTS.md](../AGENTS.md#testing-policy) for general testing guidelines.
+
 ## Linting & Type Checking
 
 ```bash
