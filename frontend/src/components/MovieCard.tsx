@@ -1,6 +1,6 @@
 import React from 'react';
 import { UsersIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
-import { getPosterProxyUrl } from '../services/api';
+import { PosterImage } from './PosterImage';
 import type { Movie } from '../types/movie';
 
 interface MovieCardProps {
@@ -48,15 +48,11 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
       rel="noopener noreferrer"
       className="group block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 relative"
     >
-      <div className="aspect-[2/3] relative overflow-hidden bg-gray-200 dark:bg-gray-700 rounded-t-lg">
-        <img
-          src={getPosterProxyUrl(movie.douban_id)}
-          alt={movie.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          loading="lazy"
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = 'none';
-          }}
+      <div className="aspect-[2/3] relative rounded-t-lg">
+        <PosterImage
+          doubanId={movie.douban_id}
+          title={movie.title}
+          className="w-full h-full group-hover:scale-105 transition-transform duration-300"
         />
 
         {/* Rating badge */}
