@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
 from app import database as app_database
+from app.cache import cache_manager
 from app.database import Base, Genre, Movie, MovieGenre, get_db
 from app.main import app
 from app.services.import_service import ImportService
@@ -255,6 +256,13 @@ def client(
     app_database.engine = original_engine
     app_database.DATABASE_URL = original_db_url
     app_database.SessionLocal = original_session_factory
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    """Clear application cache before each test."""
+    cache_manager.clear()
+    yield
 
 
 @pytest.fixture(autouse=True)

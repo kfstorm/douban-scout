@@ -14,6 +14,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
 from app import database
+from app.cache import cache_manager
 from app.database import Base, Genre, Movie, MovieGenre, MoviePoster, get_db_path
 from app.schemas import ImportStatus
 
@@ -302,6 +303,9 @@ class ImportService:
                 shutil.move(temp_db_path, target_db_path)
             else:
                 shutil.move(temp_db_path, target_db_path)
+
+            # Clear application cache after successful swap
+            cache_manager.clear()
 
             logger.info(
                 f"Import completed successfully. "

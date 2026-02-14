@@ -7,7 +7,9 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from starlette.background import BackgroundTask
 
+from app.cache import cached
 from app.database import Movie, MoviePoster, get_db
 from app.schemas import GenreCount, MoviesListResponse, StatsResponse
 from app.services.movie_service import movie_service
@@ -92,6 +94,35 @@ def _get_poster_candidates(base_urls: list[str]) -> list[str]:
     return all_candidates
 
 
+@cached(prefix="working_poster")
+async def _find_working_poster_url(poster_urls: list[str]) -> tuple[str, str] | None:
+    """Find the first working poster URL and its content type."""
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Referer": "https://movie.douban.com/",
+    }
+
+    async with httpx.AsyncClient() as client:
+        urls_to_try = _get_poster_candidates(poster_urls)
+        for url in urls_to_try:
+            try:
+                # Use HEAD first to check if it's an image and if it exists
+                # Some CDN might not support HEAD well, so we might fallback to GET
+                response = await client.get(url, headers=headers, timeout=5.0)
+                response.raise_for_status()
+
+                content_type = response.headers.get("content-type", "")
+                if content_type.startswith("image/"):
+                    return url, content_type
+            except httpx.HTTPError:
+                continue
+    return None
+
+
 @router.get("/{id}/poster")
 async def get_poster(
     id: int,
@@ -113,6 +144,12 @@ async def get_poster(
     if not poster_urls:
         raise HTTPException(status_code=404, detail="No poster available for this movie")
 
+    result = await _find_working_poster_url(poster_urls)
+    if not result:
+        raise HTTPException(status_code=502, detail="Failed to fetch a valid poster image")
+
+    working_url, content_type = result
+
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -123,35 +160,20 @@ async def get_poster(
     }
 
     try:
-        async with httpx.AsyncClient() as client:
-            last_exception = None
-            urls_to_try = _get_poster_candidates(poster_urls)
+        # We don't use the client from _find_working_poster_url to keep it simple
+        # and because StreamingResponse needs an open stream.
+        client = httpx.AsyncClient()
+        response = await client.get(working_url, headers=headers, timeout=10.0)
+        response.raise_for_status()
 
-            for url in urls_to_try:
-                try:
-                    response = await client.get(url, headers=headers, timeout=10.0)
-                    response.raise_for_status()
-
-                    content_type = response.headers.get("content-type", "")
-                    # If it's not an image (e.g., a JS challenge script), try the next URL
-                    if not content_type.startswith("image/"):
-                        continue
-
-                    return StreamingResponse(
-                        response.aiter_bytes(),
-                        media_type=content_type,
-                        headers={
-                            "Cache-Control": "public, max-age=86400",
-                        },
-                    )
-                except httpx.HTTPError as e:
-                    last_exception = e
-                    continue
-
-            if last_exception:
-                raise last_exception
-            raise HTTPException(status_code=502, detail="Failed to fetch a valid poster image")
-
+        return StreamingResponse(
+            response.aiter_bytes(),
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=86400",
+            },
+            background=BackgroundTask(client.aclose),
+        )
     except httpx.HTTPError as e:
         raise HTTPException(status_code=502, detail=f"Failed to fetch poster: {e}") from e
     except Exception as e:

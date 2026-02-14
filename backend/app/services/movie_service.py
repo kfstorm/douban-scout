@@ -5,8 +5,9 @@ import json
 import logging
 
 from sqlalchemy import func, text
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Query, Session, selectinload
 
+from app.cache import cached
 from app.database import Genre, Movie, MovieGenre
 from app.schemas import GenreCount, MovieResponse, MoviesListResponse, StatsResponse
 
@@ -18,8 +19,8 @@ MAX_RATING = 10.0
 class MovieService:
     """Service for movie-related operations."""
 
-    @staticmethod
-    def get_movies(  # noqa: PLR0912, PLR0913, PLR0915
+    def get_movies(  # noqa: PLR0913
+        self,
         db: Session,
         cursor: str | None = None,
         limit: int = 20,
@@ -40,83 +41,36 @@ class MovieService:
             f"Querying movies with filters: type={type}, genres={genres}, "
             f"exclude_genres={exclude_genres}, search={search}"
         )
-        # Eager load genres to avoid N+1
-        query = db.query(Movie).options(
-            selectinload(Movie.genres).selectinload(MovieGenre.genre_obj)
+        # Apply filters to base query
+        query = self._apply_filters(
+            db=db,
+            type=type,
+            min_rating=min_rating,
+            max_rating=max_rating,
+            min_rating_count=min_rating_count,
+            min_year=min_year,
+            max_year=max_year,
+            genres=genres,
+            exclude_genres=exclude_genres,
+            search=search,
         )
 
-        # Apply search first using FTS5 if available
-        if search:
-            # Note: We use raw SQL for FTS5 because it's a virtual table
-            # We filter by ID using the search results
-            search_query = text(
-                "SELECT rowid FROM movie_search WHERE movie_search MATCH :search_term"
-            )
-            # Escape search term for FTS5 (simple version, could be more robust)
-            # FTS5 MATCH usually prefers quoted terms for exact matches or specific syntax
-            # For simplicity, we'll just pass it through
-            query = query.filter(
-                Movie.id.in_(db.execute(search_query, {"search_term": search}).scalars().all())
-            )
+        # Get total count (cached)
+        total = self._get_filtered_count(
+            db=db,
+            type=type,
+            min_rating=min_rating,
+            max_rating=max_rating,
+            min_rating_count=min_rating_count,
+            min_year=min_year,
+            max_year=max_year,
+            genres=genres,
+            exclude_genres=exclude_genres,
+            search=search,
+        )
 
-        # Apply filters
-        if type:
-            query = query.filter(Movie.type == type)
-
-        # Rating filters
-        # When min_rating is not set or 0, include NULL ratings
-        # When min_rating > 0, exclude NULL ratings
-        effective_min = min_rating if min_rating is not None else 0
-        effective_max = max_rating if max_rating is not None else MAX_RATING
-
-        if effective_min > 0:
-            # Exclude NULL ratings when min > 0
-            query = query.filter(Movie.rating.isnot(None))
-            query = query.filter(Movie.rating.between(effective_min, effective_max))
-        elif effective_max < MAX_RATING:
-            # Include NULL ratings, but filter by max_rating
-            query = query.filter(
-                ((Movie.rating >= 0) & (Movie.rating <= effective_max)) | (Movie.rating.is_(None))
-            )
-        # else: effective_min=0 and effective_max=10, no filter needed
-
-        if min_rating_count is not None:
-            query = query.filter(Movie.rating_count >= min_rating_count)
-
-        # Year filters
-        # When min_year is not set, include NULL years
-        # When min_year is set, exclude NULL years
-        if min_year is not None:
-            query = query.filter(Movie.year.isnot(None))
-            if max_year is not None:
-                query = query.filter(Movie.year.between(min_year, max_year))
-            else:
-                query = query.filter(Movie.year >= min_year)
-        elif max_year is not None:
-            query = query.filter((Movie.year <= max_year) | (Movie.year.is_(None)))
-
-        # AND logic for genres (Optimized with JOIN + GROUP BY)
-        if genres:
-            query = (
-                query.join(Movie.genres).join(MovieGenre.genre_obj).filter(Genre.name.in_(genres))
-            )
-            query = query.group_by(Movie.id).having(func.count(Genre.id) == len(genres))
-
-        # Exclusion logic for genres
-        if exclude_genres:
-            for g_name in exclude_genres:
-                query = query.filter(
-                    ~Movie.id.in_(
-                        db.query(MovieGenre.movie_id).join(Genre).filter(Genre.name == g_name)
-                    )
-                )
-
-        # Get total count (before pagination)
-        # For GROUP BY queries, we need a special count
-        if genres:
-            total = db.query(func.count()).select_from(query.subquery()).scalar() or 0
-        else:
-            total = query.count()
+        # Eager load genres to avoid N+1
+        query = query.options(selectinload(Movie.genres).selectinload(MovieGenre.genre_obj))
 
         # Cursor-based pagination
         if cursor:
@@ -191,8 +145,8 @@ class MovieService:
         logger.debug(f"Returning {len(movie_responses)} movies (total: {total})")
         return MoviesListResponse(items=movie_responses, next_cursor=next_cursor, total=total)
 
-    @staticmethod
-    def get_genres(db: Session, type: str | None = None) -> list[GenreCount]:
+    @cached(prefix="genres")
+    def get_genres(self, db: Session, type: str | None = None) -> list[GenreCount]:
         """Get all genres with counts."""
         logger.debug(f"Querying genres with type filter: {type}")
         query = db.query(Genre.name, func.count(MovieGenre.movie_id).label("count")).join(
@@ -206,8 +160,8 @@ class MovieService:
 
         return [GenreCount(genre=r[0], count=r[1]) for r in results]
 
-    @staticmethod
-    def get_stats(db: Session) -> StatsResponse:
+    @cached(prefix="stats")
+    def get_stats(self, db: Session) -> StatsResponse:
         """Get database statistics."""
         logger.debug("Querying database statistics")
         total_movies = db.query(Movie).filter(Movie.type == "movie").count()
@@ -222,6 +176,106 @@ class MovieService:
             avg_rating=round(avg_rating, 2),
             total_genres=total_genres,
         )
+
+    def _apply_filters(  # noqa: PLR0913
+        self,
+        db: Session,
+        type: str | None = None,
+        min_rating: float | None = None,
+        max_rating: float | None = None,
+        min_rating_count: int | None = None,
+        min_year: int | None = None,
+        max_year: int | None = None,
+        genres: list[str] | None = None,
+        exclude_genres: list[str] | None = None,
+        search: str | None = None,
+    ) -> Query:
+        """Apply filters to a movie query."""
+        query = db.query(Movie)
+
+        # Apply search first using FTS5 if available
+        if search:
+            search_query = text(
+                "SELECT rowid FROM movie_search WHERE movie_search MATCH :search_term"
+            )
+            query = query.filter(
+                Movie.id.in_(db.execute(search_query, {"search_term": search}).scalars().all())
+            )
+
+        if type:
+            query = query.filter(Movie.type == type)
+
+        effective_min = min_rating if min_rating is not None else 0
+        effective_max = max_rating if max_rating is not None else MAX_RATING
+
+        if effective_min > 0:
+            query = query.filter(Movie.rating.isnot(None))
+            query = query.filter(Movie.rating.between(effective_min, effective_max))
+        elif effective_max < MAX_RATING:
+            query = query.filter(
+                ((Movie.rating >= 0) & (Movie.rating <= effective_max)) | (Movie.rating.is_(None))
+            )
+
+        if min_rating_count is not None:
+            query = query.filter(Movie.rating_count >= min_rating_count)
+
+        if min_year is not None:
+            query = query.filter(Movie.year.isnot(None))
+            if max_year is not None:
+                query = query.filter(Movie.year.between(min_year, max_year))
+            else:
+                query = query.filter(Movie.year >= min_year)
+        elif max_year is not None:
+            query = query.filter((Movie.year <= max_year) | (Movie.year.is_(None)))
+
+        if genres:
+            query = (
+                query.join(Movie.genres).join(MovieGenre.genre_obj).filter(Genre.name.in_(genres))
+            )
+            query = query.group_by(Movie.id).having(func.count(Genre.id) == len(genres))
+
+        if exclude_genres:
+            for g_name in exclude_genres:
+                query = query.filter(
+                    ~Movie.id.in_(
+                        db.query(MovieGenre.movie_id).join(Genre).filter(Genre.name == g_name)
+                    )
+                )
+
+        return query
+
+    @cached(prefix="movie_count")
+    def _get_filtered_count(  # noqa: PLR0913
+        self,
+        db: Session,
+        type: str | None = None,
+        min_rating: float | None = None,
+        max_rating: float | None = None,
+        min_rating_count: int | None = None,
+        min_year: int | None = None,
+        max_year: int | None = None,
+        genres: list[str] | None = None,
+        exclude_genres: list[str] | None = None,
+        search: str | None = None,
+    ) -> int:
+        """Get count of movies matching filters."""
+        query = self._apply_filters(
+            db=db,
+            type=type,
+            min_rating=min_rating,
+            max_rating=max_rating,
+            min_rating_count=min_rating_count,
+            min_year=min_year,
+            max_year=max_year,
+            genres=genres,
+            exclude_genres=exclude_genres,
+            search=search,
+        )
+
+        if genres:
+            return db.query(func.count()).select_from(query.subquery()).scalar() or 0
+
+        return query.count()
 
 
 movie_service = MovieService()
