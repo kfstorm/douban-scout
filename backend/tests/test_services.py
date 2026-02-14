@@ -30,20 +30,23 @@ class TestImportService:
     ):
         """Test that import process completes successfully."""
         ImportService._instance = None
+        headers = {"X-API-Key": "test-api-key"}
 
-        response = client.post("/api/import", json={"source_path": temp_source_db_path})
+        response = client.post(
+            "/api/import", json={"source_path": temp_source_db_path}, headers=headers
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "running"
 
         for _ in range(50):
             time.sleep(0.2)
-            status_response = client.get("/api/import/status")
+            status_response = client.get("/api/import/status", headers=headers)
             status = status_response.json()
             if status["status"] in ("completed", "failed"):
                 break
 
-        final_response = client.get("/api/import/status")
+        final_response = client.get("/api/import/status", headers=headers)
         final_status = final_response.json()
         assert final_status["status"] == "completed"
         assert final_status["processed"] == 7
@@ -63,16 +66,19 @@ class TestImportService:
     ):
         """Test that import clears existing data before importing new data."""
         ImportService._instance = None
+        headers = {"X-API-Key": "test-api-key"}
 
         initial_count = db_session.query(Movie).count()
         assert initial_count == 6
 
-        response = client.post("/api/import", json={"source_path": temp_source_db_path})
+        response = client.post(
+            "/api/import", json={"source_path": temp_source_db_path}, headers=headers
+        )
         assert response.status_code == 200
 
         for _ in range(50):
             time.sleep(0.2)
-            status_response = client.get("/api/import/status")
+            status_response = client.get("/api/import/status", headers=headers)
             status = status_response.json()
             if status["status"] in ("completed", "failed"):
                 break
@@ -87,11 +93,12 @@ class TestImportService:
     ):
         """Test that genres are extracted correctly from card_subtitle."""
         ImportService._instance = None
-        client.post("/api/import", json={"source_path": temp_source_db_path})
+        headers = {"X-API-Key": "test-api-key"}
+        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
 
         for _ in range(50):
             time.sleep(0.2)
-            status_response = client.get("/api/import/status")
+            status_response = client.get("/api/import/status", headers=headers)
             status = status_response.json()
             if status["status"] == "completed":
                 break
@@ -108,11 +115,12 @@ class TestImportService:
     ):
         """Test that genres are extracted correctly from subtitle fallback."""
         ImportService._instance = None
-        client.post("/api/import", json={"source_path": temp_source_db_path})
+        headers = {"X-API-Key": "test-api-key"}
+        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
 
         for _ in range(50):
             time.sleep(0.2)
-            status_response = client.get("/api/import/status")
+            status_response = client.get("/api/import/status", headers=headers)
             status = status_response.json()
             if status["status"] == "completed":
                 break
@@ -129,11 +137,12 @@ class TestImportService:
     ):
         """Test that rating count is extracted from raw_data."""
         ImportService._instance = None
-        client.post("/api/import", json={"source_path": temp_source_db_path})
+        headers = {"X-API-Key": "test-api-key"}
+        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
 
         for _ in range(50):
             time.sleep(0.2)
-            status_response = client.get("/api/import/status")
+            status_response = client.get("/api/import/status", headers=headers)
             status = status_response.json()
             if status["status"] == "completed":
                 break
@@ -148,11 +157,12 @@ class TestImportService:
     ):
         """Test that poster URL is extracted from raw_data."""
         ImportService._instance = None
-        client.post("/api/import", json={"source_path": temp_source_db_path})
+        headers = {"X-API-Key": "test-api-key"}
+        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
 
         for _ in range(50):
             time.sleep(0.2)
-            status_response = client.get("/api/import/status")
+            status_response = client.get("/api/import/status", headers=headers)
             status = status_response.json()
             if status["status"] == "completed":
                 break
@@ -171,11 +181,12 @@ class TestImportService:
     ):
         """Test that null ratings are handled correctly."""
         ImportService._instance = None
-        client.post("/api/import", json={"source_path": temp_source_db_path})
+        headers = {"X-API-Key": "test-api-key"}
+        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
 
         for _ in range(50):
             time.sleep(0.2)
-            status_response = client.get("/api/import/status")
+            status_response = client.get("/api/import/status", headers=headers)
             status = status_response.json()
             if status["status"] == "completed":
                 break
@@ -190,11 +201,12 @@ class TestImportService:
     ):
         """Test that empty raw_data is handled correctly."""
         ImportService._instance = None
-        client.post("/api/import", json={"source_path": temp_source_db_path})
+        headers = {"X-API-Key": "test-api-key"}
+        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
 
         for _ in range(50):
             time.sleep(0.2)
-            status_response = client.get("/api/import/status")
+            status_response = client.get("/api/import/status", headers=headers)
             status = status_response.json()
             if status["status"] == "completed":
                 break
@@ -211,11 +223,12 @@ class TestImportService:
     ):
         """Test that poster URL is extracted from cover_url if pic is missing."""
         ImportService._instance = None
-        client.post("/api/import", json={"source_path": temp_source_db_path})
+        headers = {"X-API-Key": "test-api-key"}
+        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
 
         for _ in range(50):
             time.sleep(0.2)
-            status_response = client.get("/api/import/status")
+            status_response = client.get("/api/import/status", headers=headers)
             status = status_response.json()
             if status["status"] == "completed":
                 break
@@ -230,6 +243,7 @@ class TestImportService:
     ):
         """Test that if an import fails, the database is rolled back to its previous state."""
         ImportService._instance = None
+        headers = {"X-API-Key": "test-api-key"}
 
         # Initial count should be from sample_movies
         initial_count = db_session.query(Movie).count()
@@ -239,14 +253,16 @@ class TestImportService:
             raise Exception("Simulated import failure")
 
         with patch.object(ImportService, "_insert_batch", side_effect=side_effect_fail):
-            response = client.post("/api/import", json={"source_path": temp_source_db_path})
+            response = client.post(
+                "/api/import", json={"source_path": temp_source_db_path}, headers=headers
+            )
             assert response.status_code == 200
 
             # Wait for import to fail
             status = {}
             for _ in range(50):
                 time.sleep(0.1)
-                status = client.get("/api/import/status").json()
+                status = client.get("/api/import/status", headers=headers).json()
                 if status["status"] == "failed":
                     break
 
@@ -263,11 +279,12 @@ class TestImportService:
     ):
         """Test that images from the 'photos' field are NOT extracted as posters."""
         ImportService._instance = None
-        client.post("/api/import", json={"source_path": temp_source_db_path})
+        headers = {"X-API-Key": "test-api-key"}
+        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
 
         for _ in range(50):
             time.sleep(0.2)
-            status_response = client.get("/api/import/status")
+            status_response = client.get("/api/import/status", headers=headers)
             status = status_response.json()
             if status["status"] == "completed":
                 break

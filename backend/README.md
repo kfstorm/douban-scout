@@ -144,15 +144,17 @@ curl http://localhost:8000/api/movies/genres
 # Get stats
 curl http://localhost:8000/api/movies/stats
 
-# Start import
+# Start import (Requires API Key)
 curl -X POST http://localhost:8000/api/import \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
   -d '{"source_path": "/app/import/backup_20260211_085729.sqlite3"}'
 
-# Check import status
-curl http://localhost:8000/api/import/status
+# Check import status (Requires API Key)
+curl -H "X-API-Key: your-api-key" http://localhost:8000/api/import/status
 ```
 
 ## Environment Variables
 
 - `DATABASE_DIR`: Directory containing `movies.db` (default: `data`)
+- `IMPORT_API_KEY`: Secret key required for import API authentication. If not set, import API will reject all requests.

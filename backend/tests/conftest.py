@@ -18,6 +18,12 @@ from app.main import app
 from app.services.import_service import ImportService
 
 
+@pytest.fixture(autouse=True)
+def setup_test_env(monkeypatch):
+    """Set up test environment variables."""
+    monkeypatch.setenv("IMPORT_API_KEY", "test-api-key")
+
+
 @pytest.fixture(scope="session")
 def temp_dir() -> Generator[str, None, None]:
     """Create a temporary directory for test data."""

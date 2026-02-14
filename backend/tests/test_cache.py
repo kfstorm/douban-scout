@@ -127,19 +127,22 @@ class TestMovieServiceCaching:
     ):
         """Test that import clears the cache."""
         cache_manager.clear()
+        headers = {"X-API-Key": "test-api-key"}
 
         # Populate cache
         movie_service.get_stats(db_session)
         assert cache_manager.get("stats") is not None
 
         # Trigger import
-        response = client.post("/api/import", json={"source_path": temp_source_db_path})
+        response = client.post(
+            "/api/import", json={"source_path": temp_source_db_path}, headers=headers
+        )
         assert response.status_code == 200
 
         # Wait for completion
         for _ in range(50):
             time.sleep(0.1)
-            status = client.get("/api/import/status").json()
+            status = client.get("/api/import/status", headers=headers).json()
             if status["status"] == "completed":
                 break
 

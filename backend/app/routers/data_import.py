@@ -7,10 +7,11 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies.auth import verify_api_key
 from app.schemas import ImportStatus
 from app.services.import_service import import_service
 
-router = APIRouter(prefix="/import", tags=["import"])
+router = APIRouter(prefix="/import", tags=["import"], dependencies=[Depends(verify_api_key)])
 
 
 class ImportRequest(BaseModel):

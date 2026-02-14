@@ -467,16 +467,30 @@ class TestStatsEndpoint:
 class TestImportEndpoint:
     """Tests for data import endpoint."""
 
+    def test_get_import_status_no_auth(self, client: TestClient):
+        """Test getting import status without API key returns 401."""
+        response = client.get("/api/import/status")
+        assert response.status_code == 401
+
+    def test_get_import_status_invalid_auth(self, client: TestClient):
+        """Test getting import status with invalid API key returns 403."""
+        response = client.get("/api/import/status", headers={"X-API-Key": "wrong-key"})
+        assert response.status_code == 403
+
     def test_get_import_status_idle(self, client: TestClient):
         """Test getting import status when idle."""
-        response = client.get("/api/import/status")
+        response = client.get("/api/import/status", headers={"X-API-Key": "test-api-key"})
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "idle"
 
     def test_start_import_file_not_found(self, client: TestClient):
         """Test importing from non-existent file returns 404."""
-        response = client.post("/api/import", json={"source_path": "/nonexistent/file.sqlite3"})
+        response = client.post(
+            "/api/import",
+            json={"source_path": "/nonexistent/file.sqlite3"},
+            headers={"X-API-Key": "test-api-key"},
+        )
         assert response.status_code == 404
         data = response.json()
         assert "not found" in data["detail"].lower()
@@ -485,12 +499,17 @@ class TestImportEndpoint:
         self, client: TestClient, populated_source_db, temp_source_db_path: str
     ):
         """Test that starting import while already running returns current status."""
-        response1 = client.post("/api/import", json={"source_path": temp_source_db_path})
+        headers = {"X-API-Key": "test-api-key"}
+        response1 = client.post(
+            "/api/import", json={"source_path": temp_source_db_path}, headers=headers
+        )
         assert response1.status_code == 200
         data1 = response1.json()
         assert data1["status"] == "running"
 
-        response2 = client.post("/api/import", json={"source_path": temp_source_db_path})
+        response2 = client.post(
+            "/api/import", json={"source_path": temp_source_db_path}, headers=headers
+        )
         assert response2.status_code == 200
         data2 = response2.json()
         assert data2["status"] == "running"
