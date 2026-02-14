@@ -79,17 +79,17 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/api/import/status
 
 <!-- ENV_VARS_START -->
 
-| Environment Variable | Default Value | Description |
-| -------------------- | ------------- | ----------- |
-| `DATA_DIR` | `data` | Root directory for all application data |
-| `POSTER_CACHE_TTL` | `365` | Poster cache TTL in days |
-| `IMPORT_API_KEY` | *None* | Secret key required for import API authentication |
-| `RATE_LIMIT_DEFAULT` | `100/minute` | Global default rate limit |
-| `RATE_LIMIT_SEARCH` | `30/minute` | Limit for search and movie list endpoints |
-| `RATE_LIMIT_GENRES` | `20/minute` | Limit for genres endpoint |
-| `RATE_LIMIT_STATS` | `10/minute` | Limit for stats endpoint |
-| `RATE_LIMIT_POSTER` | `200/minute` | Limit for poster proxy endpoint |
-| `RATE_LIMIT_IMPORT` | `5/minute` | Limit for data import endpoints |
+| 环境变量 | 默认值 | 描述 |
+| -------- | ------ | ---- |
+| `DATA_DIR` | `data` | 存储所有持久化数据的根目录, 包括 SQLite 数据库文件和海报图片缓存 |
+| `POSTER_CACHE_TTL` | `365` | 本地海报图片的缓存有效期(天), 超过此天数后会尝试重新下载 |
+| `IMPORT_API_KEY` | *无* | 调用数据导入 API 时必须在请求头中提供的 X-API-Key 密钥; 若未设置, 导入接口将被禁用 |
+| `RATE_LIMIT_DEFAULT` | `100/minute` | 全局默认的接口访问速率限制, 适用于未单独配置限流的接口 |
+| `RATE_LIMIT_SEARCH` | `30/minute` | 搜索标题、获取电影或电视节目列表等主要查询接口的访问速率限制 |
+| `RATE_LIMIT_GENRES` | `20/minute` | 获取影视类型标签列表接口的访问速率限制 |
+| `RATE_LIMIT_STATS` | `10/minute` | 获取数据统计信息(如作品总数、年份分布等)接口的访问速率限制 |
+| `RATE_LIMIT_POSTER` | `200/minute` | 海报图片代理服务接口的访问速率限制 |
+| `RATE_LIMIT_IMPORT` | `5/minute` | 触发数据导入任务以及查询导入进度接口的访问速率限制 |
 
 <!-- ENV_VARS_END -->
 
@@ -102,12 +102,6 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/api/import/status
 - `1/second` (每秒 1 次)
 
 支持的时间周期：`second`, `minute`, `hour`, `day`, `month`, `year`。
-
-## 故障排除
-
-- **导入失败**：确保源文件路径正确且后端进程有权访问。
-- **未显示数据**：确保导入过程已完成。
-- **端口冲突**：确保端口 3000 (前端) 和 8000 (后端) 未被占用。
 
 ## 许可
 

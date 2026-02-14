@@ -11,8 +11,8 @@ from app.config import Settings
 def generate_env_table() -> str:
     """Generate Markdown table for environment variables."""
     lines = [
-        "| Environment Variable | Default Value | Description |",
-        "| -------------------- | ------------- | ----------- |",
+        "| 环境变量 | 默认值 | 描述 |",
+        "| -------- | ------ | ---- |",
     ]
 
     # Get fields from Settings
@@ -25,7 +25,7 @@ def generate_env_table() -> str:
         # Default value
         default = field.default
         if default is None:
-            default = "*None*"
+            default = "*无*"
         elif isinstance(default, str):
             default = f"`{default}`"
         else:
