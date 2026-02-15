@@ -1,6 +1,5 @@
 """Database models and connection management."""
 
-import contextlib
 import sqlite3
 from collections.abc import Generator
 from pathlib import Path
@@ -131,7 +130,9 @@ def get_db_path() -> str:
 # Construct initial DATABASE_URL
 # Always read-only for the production serving engine to ensure data integrity
 # and allow safe atomic swaps.
-DATABASE_URL = f"sqlite:///{get_db_path()}?mode=ro"
+# immutable=1 tells SQLite that the database file will not change,
+# which allows it to skip all locking and sidecar file (-wal, -shm) checks.
+DATABASE_URL = f"sqlite:///{get_db_path()}?mode=ro&immutable=1"
 
 
 def sqlite_creator() -> sqlite3.Connection:
@@ -145,8 +146,10 @@ def sqlite_creator() -> sqlite3.Connection:
         raise sqlite3.OperationalError(f"Database file not found at {path}")
 
     # Use URI mode explicitly
+    # If mode=ro is in DATABASE_URL, we also add immutable=1
+    uri = f"file:{path}?mode=ro&immutable=1" if "mode=ro" in DATABASE_URL else path
     return sqlite3.connect(
-        f"file:{path}?mode=ro" if "mode=ro" in DATABASE_URL else path,
+        uri,
         uri=True,
         check_same_thread=False,
     )
@@ -168,17 +171,11 @@ def set_sqlite_pragma(dbapi_connection, connection_record):  # type: ignore[no-u
     # However, with uri=True and mode=ro, it should generally fail.
     cursor = dbapi_connection.cursor()
 
-    # We disable WAL for the database because we use atomic swaps
-    # and serve it read-only. WAL is only useful for concurrent writes.
-    # It also creates sidecar files (-wal, -shm) that complicate atomic swaps.
-    if "mode=ro" in DATABASE_URL:
-        with contextlib.suppress(sqlite3.OperationalError):
-            cursor.execute("PRAGMA journal_mode=DELETE")
-    else:
-        # For writeable databases, we still prefer DELETE or TRUNCATE
-        # to avoid sidecar files interfering with the import swap logic.
-        with contextlib.suppress(sqlite3.OperationalError):
-            cursor.execute("PRAGMA journal_mode=TRUNCATE")
+    # For writeable databases (tests/dev), we still prefer TRUNCATE
+    # to avoid sidecar files interfering with the import swap logic.
+    # For read-only serving, immutable=1 makes journal_mode redundant as sidecars are bypassed.
+    if "mode=ro" not in DATABASE_URL:
+        cursor.execute("PRAGMA journal_mode=TRUNCATE")
 
     cursor.execute("PRAGMA synchronous=NORMAL")
 

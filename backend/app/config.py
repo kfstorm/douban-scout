@@ -1,7 +1,5 @@
 """Application configuration."""
 
-from pathlib import Path
-
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -61,12 +59,6 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
-
-    @property
-    def database_url(self) -> str:
-        """Get the database URL."""
-        db_path = Path(self.data_dir) / "db" / "movies.db"
-        return f"sqlite:///{db_path}"
 
 
 settings = Settings()
