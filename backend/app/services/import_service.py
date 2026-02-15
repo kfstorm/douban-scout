@@ -595,6 +595,9 @@ class ImportService:
                                     rating_info = detail.get("rating", {})
                                     if isinstance(rating_info, dict):
                                         rating_count = rating_info.get("count", 0)
+                                    if not rating_count:
+                                        # Fallback to vote_count (top_list format)
+                                        rating_count = detail.get("vote_count", 0)
 
                                     # Extract poster URLs
                                     pic = detail.get("pic", {})
@@ -607,29 +610,48 @@ class ImportService:
                                     if cover_url:
                                         poster_urls.add(cover_url)
 
-                                    # Extract regions from countries list
+                                    # Extract regions
                                     countries = detail.get("countries", [])
-                                    if isinstance(countries, list):
-                                        for country in countries:
-                                            if country in self.VALID_REGIONS:
-                                                movie_region_names.add(country)
+                                    regions = detail.get("regions", [])
+                                    # Handle both "countries" and "regions" as lists
+                                    for r in (countries if isinstance(countries, list) else []) + (
+                                        regions if isinstance(regions, list) else []
+                                    ):
+                                        if isinstance(r, str) and r in self.VALID_REGIONS:
+                                            movie_region_names.add(r)
 
-                                    # Extract genres from card_subtitle or subtitle
-                                    card_subtitle = detail.get("card_subtitle") or detail.get(
-                                        "subtitle", ""
-                                    )
-                                    if card_subtitle:
-                                        # card_subtitle example: "2000 / 美国 / 剧情 喜剧"
-                                        # Split by any whitespace and "/" to get tokens
-                                        tokens = card_subtitle.replace("/", " ").split()
-                                        for token in tokens:
-                                            if token in self.VALID_GENRES:
-                                                movie_genre_names.add(token)
-                                            if (
-                                                not movie_region_names
-                                                and token in self.VALID_REGIONS
-                                            ):
-                                                movie_region_names.add(token)
+                                    # Extract genres
+                                    genres_list = detail.get("genres", [])
+                                    types_list = detail.get("types", [])
+                                    # Handle both "genres" and "types" as lists
+                                    for g in (
+                                        genres_list if isinstance(genres_list, list) else []
+                                    ) + (types_list if isinstance(types_list, list) else []):
+                                        if isinstance(g, str) and g in self.VALID_GENRES:
+                                            movie_genre_names.add(g)
+
+                                    # Fallback to card_subtitle or subtitle for genres and regions
+                                    if not movie_genre_names or not movie_region_names:
+                                        card_subtitle = detail.get("card_subtitle") or detail.get(
+                                            "subtitle", ""
+                                        )
+                                        if card_subtitle:
+                                            # card_subtitle example: "2000 / 美国 / 剧情 喜剧"
+                                            # Split by any whitespace and "/" to get tokens
+                                            tokens = card_subtitle.replace("/", " ").split()
+
+                                            found_genres_in_subtitle = set()
+                                            found_regions_in_subtitle = set()
+                                            for token in tokens:
+                                                if token in self.VALID_GENRES:
+                                                    found_genres_in_subtitle.add(token)
+                                                if token in self.VALID_REGIONS:
+                                                    found_regions_in_subtitle.add(token)
+
+                                            if not movie_genre_names:
+                                                movie_genre_names.update(found_genres_in_subtitle)
+                                            if not movie_region_names:
+                                                movie_region_names.update(found_regions_in_subtitle)
                             except json.JSONDecodeError as e:
                                 logger.warning(
                                     f"Failed to parse raw_data for douban_id {douban_id}: {e}"

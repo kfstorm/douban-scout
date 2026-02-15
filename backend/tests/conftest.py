@@ -185,6 +185,66 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             1612985849.0,
         ),
         (
+            "1291553",
+            "tt0107617",
+            "青木瓜之味",
+            1993,
+            7.7,
+            '{"detail": {"rating": {"count": 90369}, "subtitle": '
+            '"1993 / 越南 法国 / 剧情 爱情 音乐 / 陈英雄 / 陈女氤溪 如琼"}, '
+            '"detail_source": "doulist/161676708"}',
+            "movie",
+            1612985849.0,
+        ),
+        (
+            "1291543",
+            "tt0373074",
+            "功夫",
+            2004,
+            8.9,
+            '{"detail": {"rating": {"count": 1323628}, "card_subtitle": '
+            '"2004 / 中国大陆 中国香港 / 喜剧 动作 犯罪 奇幻 / 周星驰 / 周星驰 元秋"}, '
+            '"detail_source": "explore:movie:score_range:8,9/tags:"}',
+            "movie",
+            1612985849.0,
+        ),
+        (
+            "1291588",
+            "tt0102587",
+            "岁月的童话",
+            1991,
+            8.6,
+            '{"detail": {"rating": {"count": 152316}, "genres": ["剧情", "爱情", "动画"], '
+            '"countries": ["日本"]}, "detail_source": '
+            '"https://m.douban.com/rexxar/api/v2/movie/1291588"}',
+            "movie",
+            1612985849.0,
+        ),
+        (
+            "1291840",
+            "tt0089755",
+            "走出非洲",
+            1985,
+            8.7,
+            '{"detail": {"rating": ["8.7", "45"], "types": ["冒险", "传记", "剧情", "爱情"], '
+            '"regions": ["美国"], "vote_count": 102121}, "detail_source": '
+            '"https://movie.douban.com/j/chart/top_list?type=11&interval_id=100:90"}',
+            "movie",
+            1612985849.0,
+        ),
+        (
+            "1291558",
+            "tt0114086",
+            "云上的日子",
+            1995,
+            7.6,
+            '{"detail": {"rating": {"count": 74558}, "card_subtitle": '
+            '"1995 / 法国 意大利 德国 / 剧情 爱情 情色 / 米开朗基罗·安东尼奥尼 维姆·文德斯 / '
+            '苏菲·玛索 约翰·马尔科维奇"}, "detail_source": "subject_collection/film_genre_37"}',
+            "movie",
+            1612985849.0,
+        ),
+        (
             "9999",
             None,
             None,

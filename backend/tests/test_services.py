@@ -49,17 +49,25 @@ class TestImportService:
         final_response = client.get("/api/import/status", headers=headers)
         final_status = final_response.json()
         assert final_status["status"] == "completed"
-        assert final_status["processed"] == 7
+        # 7 original + 5 new
+        assert final_status["processed"] == 12
         assert final_status["percentage"] == 100.0
 
         db_session.expire_all()
         result = db_session.execute(text("SELECT COUNT(*) FROM movies"))
         count = result.scalar()
-        assert count == 7
+        assert count == 12
 
         genre_result = db_session.execute(text("SELECT COUNT(*) FROM movie_genres"))
         genre_count = genre_result.scalar()
-        assert genre_count == 12
+        # Original: 12. New ones:
+        # 青木瓜之味: 剧情 爱情 音乐 (3)
+        # 功夫: 喜剧 动作 犯罪 奇幻 (4)
+        # 岁月的童话: 剧情 爱情 动画 (3)
+        # 走出非洲: 冒险 传记 剧情 爱情 (4)
+        # 云上的日子: 剧情 爱情 情色 (3)
+        # Total: 12 + 17 = 29
+        assert genre_count == 29
 
     def test_import_clears_existing_data(
         self, client, sample_movies, populated_source_db, temp_source_db_path: str, db_session
@@ -69,6 +77,9 @@ class TestImportService:
         headers = {"X-API-Key": "test-api-key"}
 
         initial_count = db_session.query(Movie).count()
+        # 12 because sample_movies fixture is called, and it uses the database
+        # that already had some items, but wait, sample_movies adds its own.
+        # Let's check conftest.py again.
         assert initial_count == 7
 
         response = client.post(
@@ -86,7 +97,7 @@ class TestImportService:
         # Close session to force new connection that sees the swapped file
         db_session.close()
         final_count = db_session.query(Movie).count()
-        assert final_count == 7
+        assert final_count == 12
 
     def test_import_extracts_genres_correctly(
         self, client, populated_source_db, temp_source_db_path: str, db_session
@@ -273,6 +284,51 @@ class TestImportService:
         db_session.expire_all()
         final_count = db_session.query(Movie).count()
         assert final_count == 7
+
+    def test_import_robustness(
+        self, client, populated_source_db, temp_source_db_path: str, db_session
+    ):
+        """Test that different detail_source formats are handled correctly."""
+        ImportService._instance = None
+        headers = {"X-API-Key": "test-api-key"}
+        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
+
+        for _ in range(50):
+            time.sleep(0.2)
+            status_response = client.get("/api/import/status", headers=headers)
+            status = status_response.json()
+            if status["status"] == "completed":
+                break
+
+        db_session.expire_all()
+
+        # 1. Test top_list format (走出非洲)
+        movie_out_of_africa = db_session.query(Movie).filter(Movie.id == 1291840).first()
+        assert movie_out_of_africa is not None
+        assert movie_out_of_africa.rating_count == 102121
+        genres = [g.genre_obj.name for g in movie_out_of_africa.genres]
+        assert set(genres) == {"冒险", "传记", "剧情", "爱情"}
+        regions = [r.region_obj.name for r in movie_out_of_africa.regions]
+        assert "美国" in regions
+
+        # 2. Test rexxar API format (岁月的童话)
+        movie_yesterday = db_session.query(Movie).filter(Movie.id == 1291588).first()
+        assert movie_yesterday is not None
+        assert movie_yesterday.rating_count == 152316
+        genres = [g.genre_obj.name for g in movie_yesterday.genres]
+        assert set(genres) == {"剧情", "爱情", "动画"}
+        regions = [r.region_obj.name for r in movie_yesterday.regions]
+        assert "日本" in regions
+
+        # 3. Test doulist/subtitle format (青木瓜之味)
+        movie_papaya = db_session.query(Movie).filter(Movie.id == 1291553).first()
+        assert movie_papaya is not None
+        genres = [g.genre_obj.name for g in movie_papaya.genres]
+        assert "越南" not in genres  # 越南 is a region
+        assert set(genres) == {"剧情", "爱情", "音乐"}
+        regions = [r.region_obj.name for r in movie_papaya.regions]
+        assert "越南" in regions
+        assert "法国" in regions
 
     def test_import_does_not_extract_from_photos_field(
         self, client, populated_source_db, temp_source_db_path: str, db_session
