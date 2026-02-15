@@ -101,7 +101,7 @@ wheels = [
 [[package]]
 name = "douban-scout-backend"
 version = "1.0.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
     { name = "alembic" },

@@ -35,10 +35,10 @@ scripts/format.sh    # auto-format with ruff
 scripts/test.sh      # run all tests
 
 # Single test
-PYTHONPATH=. uv run pytest tests/test_api.py::TestMoviesEndpoint::test_get_movies_with_data -v
+uv run pytest tests/test_api.py::TestMoviesEndpoint::test_get_movies_with_data -v
 
 # Run specific test file
-PYTHONPATH=. uv run pytest tests/test_api.py -v
+uv run pytest tests/test_api.py -v
 ```
 
 ## Environment Variables
