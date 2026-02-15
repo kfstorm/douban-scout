@@ -131,8 +131,8 @@ class ImportService:
             if not Path(source_path).exists():
                 raise FileNotFoundError(f"Source file not found: {source_path}")
 
-            # Connect to source database
-            source_conn = sqlite3.connect(source_path)
+            # Connect to source database (read-only)
+            source_conn = sqlite3.connect(f"file:{source_path}?mode=ro", uri=True)
             source_cursor = source_conn.cursor()
 
             # Get total count of items to import (movie and tv).
