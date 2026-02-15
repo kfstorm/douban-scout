@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import {
   XMarkIcon,
@@ -49,6 +49,31 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
 
   const [regionSearch, setRegionSearch] = useState('');
   const [genreSearch, setGenreSearch] = useState('');
+  const [effectiveRegionSearch, setEffectiveRegionSearch] = useState('');
+  const [effectiveGenreSearch, setEffectiveGenreSearch] = useState('');
+  const [isRegionComposing, setIsRegionComposing] = useState(false);
+  const [isGenreComposing, setIsGenreComposing] = useState(false);
+
+  // Sync effective search with local search when not composing
+  useEffect(() => {
+    if (isRegionComposing) return;
+
+    const timer = setTimeout(() => {
+      setEffectiveRegionSearch(regionSearch);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [regionSearch, isRegionComposing]);
+
+  useEffect(() => {
+    if (isGenreComposing) return;
+
+    const timer = setTimeout(() => {
+      setEffectiveGenreSearch(genreSearch);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [genreSearch, isGenreComposing]);
 
   // Fetch genres from backend
   const { data: genresData, isLoading: isLoadingGenres } = useQuery({
@@ -254,6 +279,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
             placeholder="搜索地区..."
             value={regionSearch}
             onChange={(e) => setRegionSearch(e.target.value)}
+            onCompositionStart={() => setIsRegionComposing(true)}
+            onCompositionEnd={() => setIsRegionComposing(false)}
             className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </div>
@@ -271,7 +298,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
           ) : (
             <div className="flex flex-wrap gap-2">
               {regionsData
-                ?.filter((r) => r.region.toLowerCase().includes(regionSearch.toLowerCase()))
+                ?.filter((r) =>
+                  r.region.toLowerCase().includes(effectiveRegionSearch.toLowerCase()),
+                )
                 .slice(0, MAX_REGION_DISPLAY_ITEMS)
                 .map((regionItem) => {
                   const isSelected = selectedRegions.includes(regionItem.region);
@@ -326,6 +355,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
             placeholder="搜索类型..."
             value={genreSearch}
             onChange={(e) => setGenreSearch(e.target.value)}
+            onCompositionStart={() => setIsGenreComposing(true)}
+            onCompositionEnd={() => setIsGenreComposing(false)}
             className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </div>
@@ -343,7 +374,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
           ) : (
             <div className="flex flex-wrap gap-2">
               {genresData
-                ?.filter((g) => g.genre.toLowerCase().includes(genreSearch.toLowerCase()))
+                ?.filter((g) => g.genre.toLowerCase().includes(effectiveGenreSearch.toLowerCase()))
                 .map((genreItem) => {
                   const isSelected = selectedGenres.includes(genreItem.genre);
                   const isExcluded = excludedGenres.includes(genreItem.genre);
