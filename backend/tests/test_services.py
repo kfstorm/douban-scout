@@ -66,9 +66,9 @@ class TestImportService:
         # 岁月的童话: 剧情 爱情 动画 (3)
         # 走出非洲: 冒险 传记 剧情 爱情 (4)
         # 云上的日子: 剧情 爱情 情色 (3)
-        # 秋海棠: 爱情 剧情 (2)
-        # Total: 12 + 19 = 31
-        assert genre_count == 31
+        # 秋海棠: (no genres extracted as they were only in tags)
+        # Total: 12 + 17 = 29
+        assert genre_count == 29
 
     def test_import_clears_existing_data(
         self, client, sample_movies, populated_source_db, temp_source_db_path: str, db_session
@@ -330,32 +330,6 @@ class TestImportService:
         regions = [r.region_obj.name for r in movie_papaya.regions]
         assert "越南" in regions
         assert "法国" in regions
-
-    def test_import_extracts_from_tags_fallback(
-        self, client, populated_source_db, temp_source_db_path: str, db_session
-    ):
-        """Test that genres and regions are extracted from tags when other fields are missing."""
-        ImportService._instance = None
-        headers = {"X-API-Key": "test-api-key"}
-        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
-
-        for _ in range(50):
-            time.sleep(0.2)
-            status_response = client.get("/api/import/status", headers=headers)
-            status = status_response.json()
-            if status["status"] == "completed":
-                break
-
-        db_session.expire_all()
-        # ID 1298274 (秋海棠) has '大陆', '台湾', '爱情', '剧情' in tags
-        movie = db_session.query(Movie).filter(Movie.id == 1298274).first()
-        assert movie is not None
-        genres = [g.genre_obj.name for g in movie.genres]
-        assert "爱情" in genres
-        assert "剧情" in genres
-        regions = [r.region_obj.name for r in movie.regions]
-        assert "大陆" in regions
-        assert "台湾" in regions
 
     def test_import_does_not_extract_from_photos_field(
         self, client, populated_source_db, temp_source_db_path: str, db_session

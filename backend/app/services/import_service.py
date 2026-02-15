@@ -93,18 +93,19 @@ class ImportService:
             return set()
 
         found = set()
-        # Split by major delimiters into segments
+        # Split by major delimiters into segments.
+        # Do not treat parentheses or other braces as delimiters.
         segments = re.split(r"[/|\\,，、]", s)  # noqa: RUF001
 
         whitelist = self._SORTED_GENRES if is_genre else self._SORTED_REGIONS
         valid_set = self.VALID_GENRES if is_genre else self.VALID_REGIONS
 
         for seg in segments:
-            cleaned_seg = seg.strip().strip("()（）[]:;\"'").strip()  # noqa: RUF001
+            cleaned_seg = seg.strip()
             if not cleaned_seg:
                 continue
 
-            # First try matching the entire segment (handles "Trinidad and Tobago")
+            # First try matching the entire segment
             if cleaned_seg in valid_set:
                 found.add(cleaned_seg)
                 continue
@@ -113,12 +114,10 @@ class ImportService:
             for item in whitelist:
                 if not item:
                     continue
-                if item.isascii():
-                    # Use word boundaries for English tokens to avoid partial matches
-                    pattern = rf"\b{re.escape(item)}\b"
-                    if re.search(pattern, cleaned_seg):
-                        found.add(item)
-                elif item in cleaned_seg:
+
+                # Use word boundaries to avoid partial matches (e.g., "金" in "金像奖")
+                pattern = rf"\b{re.escape(item)}\b"
+                if re.search(pattern, cleaned_seg):
                     found.add(item)
 
         return found
@@ -312,23 +311,6 @@ class ImportService:
                                                 movie_region_names.update(
                                                     self._extract_metadata_from_string(
                                                         parts[start_idx], is_genre=False
-                                                    )
-                                                )
-
-                                    # Extract from tags
-                                    tags = detail.get("tags", [])
-                                    if isinstance(tags, list):
-                                        for tag in tags:
-                                            tag_name = tag.get("name", "")
-                                            if tag_name:
-                                                movie_genre_names.update(
-                                                    self._extract_metadata_from_string(
-                                                        tag_name, is_genre=True
-                                                    )
-                                                )
-                                                movie_region_names.update(
-                                                    self._extract_metadata_from_string(
-                                                        tag_name, is_genre=False
                                                     )
                                                 )
                             except json.JSONDecodeError as e:

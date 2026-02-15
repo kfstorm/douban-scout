@@ -56,11 +56,14 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"app/metadata_constants.py" = ["RUF001"]
 "tests/*" = [
     "PLR2004", # Magic value used in comparison
     "D101",    # Missing docstring in public class
     "D102",    # Missing docstring in public method
     "D103",    # Missing docstring in public function
+    "RUF001",  # Ambiguous unicode character in string
+    "RUF002",  # Ambiguous unicode character in docstring
 ]
 
 [tool.ruff.lint.pydocstyle]
