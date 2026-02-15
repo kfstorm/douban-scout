@@ -112,7 +112,7 @@ export function useUrlSync() {
     if (excludedGenres.length > 0) params.set('excludedGenres', excludedGenres.join(','));
     if (selectedRegions.length > 0) params.set('selectedRegions', selectedRegions.join(','));
     if (searchQuery) params.set('searchQuery', searchQuery);
-    if (sortBy !== 'rating') params.set('sortBy', sortBy);
+    if (sortBy !== 'rating_count') params.set('sortBy', sortBy);
     if (sortOrder !== 'desc') params.set('sortOrder', sortOrder);
 
     const newSearch = params.toString();

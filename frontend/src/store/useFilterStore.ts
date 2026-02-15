@@ -48,7 +48,7 @@ const initialState = {
   excludedGenres: [] as string[],
   selectedRegions: [] as string[],
   searchQuery: '',
-  sortBy: 'rating' as const,
+  sortBy: 'rating_count' as const,
   sortOrder: 'desc' as const,
 };
 

@@ -14,7 +14,7 @@ describe('useFilterStore', () => {
       excludedGenres: [],
       selectedRegions: [],
       searchQuery: '',
-      sortBy: 'rating',
+      sortBy: 'rating_count',
       sortOrder: 'desc',
     });
   });
@@ -32,7 +32,7 @@ describe('useFilterStore', () => {
       expect(state.excludedGenres).toEqual([]);
       expect(state.selectedRegions).toEqual([]);
       expect(state.searchQuery).toBe('');
-      expect(state.sortBy).toBe('rating');
+      expect(state.sortBy).toBe('rating_count');
       expect(state.sortOrder).toBe('desc');
     });
   });
@@ -270,7 +270,7 @@ describe('useFilterStore', () => {
       expect(state.excludedGenres).toEqual([]);
       expect(state.selectedRegions).toEqual([]);
       expect(state.searchQuery).toBe('');
-      expect(state.sortBy).toBe('rating');
+      expect(state.sortBy).toBe('rating_count');
       expect(state.sortOrder).toBe('desc');
     });
   });

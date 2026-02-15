@@ -19,7 +19,7 @@ describe('useUrlSync', () => {
       excludedGenres: [],
       selectedRegions: [],
       searchQuery: '',
-      sortBy: 'rating',
+      sortBy: 'rating_count',
       sortOrder: 'desc',
     });
 
@@ -215,7 +215,7 @@ describe('useUrlSync', () => {
       mockLocation.search = '?sortBy=invalid';
       renderHook(() => useUrlSync());
 
-      expect(useFilterStore.getState().sortBy).toBe('rating');
+      expect(useFilterStore.getState().sortBy).toBe('rating_count');
     });
 
     it('should not set invalid sortOrder value', () => {

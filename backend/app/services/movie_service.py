@@ -40,7 +40,7 @@ class MovieService:
         exclude_genres: list[str] | None = None,
         regions: list[str] | None = None,
         search: str | None = None,
-        sort_by: str = "rating",
+        sort_by: str = "rating_count",
         sort_order: str = "desc",
     ) -> MoviesListResponse:
         """Get movies with filtering and pagination."""
