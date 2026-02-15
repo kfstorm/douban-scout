@@ -3,6 +3,7 @@
 import contextlib
 import json
 import logging
+import re
 import shutil
 import sqlite3
 import threading
@@ -28,6 +29,7 @@ from app.database import (
     Region,
     get_db_path,
 )
+from app.metadata_constants import VALID_GENRES, VALID_REGIONS
 from app.schemas import ImportStatus
 
 # Configure logger
@@ -43,417 +45,13 @@ class ImportService:
 
     _MAX_ERROR_LOGS = 10  # Maximum number of errors to log with full traceback
 
-    # Valid genres
-    VALID_GENRES: ClassVar[set[str]] = {
-        "剧情",
-        "喜剧",
-        "爱情",
-        "动作",
-        "惊悚",
-        "犯罪",
-        "恐怖",
-        "动画",
-        "纪录片",
-        "短片",
-        "悬疑",
-        "冒险",
-        "科幻",
-        "奇幻",
-        "家庭",
-        "音乐",
-        "历史",
-        "战争",
-        "歌舞",
-        "传记",
-        "古装",
-        "真人秀",
-        "同性",
-        "运动",
-        "西部",
-        "情色",
-        "儿童",
-        "武侠",
-        "脱口秀",
-        "黑色电影",
-        "戏曲",
-        "灾难",
-    }
+    # Valid genres and regions from generated constants
+    VALID_GENRES: ClassVar[set[str]] = set(VALID_GENRES)
+    VALID_REGIONS: ClassVar[set[str]] = set(VALID_REGIONS)
 
-    # Valid regions (hard-coded list as requested)
-    VALID_REGIONS: ClassVar[set[str]] = {
-        "美国",
-        "中国大陆",
-        "日本",
-        "英国",
-        "法国",
-        "中国香港",
-        "韩国",
-        "德国",
-        "加拿大",
-        "意大利",
-        "中国台湾",
-        "西班牙",
-        "印度",
-        "澳大利亚",
-        "俄罗斯",
-        "巴西",
-        "墨西哥",
-        "泰国",
-        "瑞典",
-        "阿根廷",
-        "比利时",
-        "荷兰",
-        "丹麦",
-        "波兰",
-        "土耳其",
-        "菲律宾",
-        "瑞士",
-        "奥地利",
-        "苏联",
-        "芬兰",
-        "挪威",
-        "西德",
-        "葡萄牙",
-        "匈牙利",
-        "以色列",
-        "捷克",
-        "希腊",
-        "罗马尼亚",
-        "爱尔兰",
-        "新加坡",
-        "伊朗",
-        "捷克斯洛伐克",
-        "印度尼西亚",
-        "南斯拉夫",
-        "越南",
-        "乌克兰",
-        "智利",
-        "新西兰",
-        "保加利亚",
-        "南非",
-        "马来西亚",
-        "哥伦比亚",
-        "冰岛",
-        "爱沙尼亚",
-        "克罗地亚",
-        "埃及",
-        "古巴",
-        "塞尔维亚",
-        "拉脱维亚",
-        "立陶宛",
-        "黎巴嫩",
-        "尼日利亚",
-        "秘鲁",
-        "Canada",
-        "斯洛文尼亚",
-        "卢森堡",
-        "格鲁吉亚",
-        "斯洛伐克",
-        "乌拉圭",
-        "阿尔巴尼亚",
-        "委内瑞拉",
-        "USA",
-        "卡塔尔",
-        "摩洛哥",
-        "哈萨克斯坦",
-        "巴基斯坦",
-        "巴勒斯坦",
-        "朝鲜",
-        "孟加拉国",
-        "突尼斯",
-        "波黑",
-        "阿尔及利亚",
-        "波多黎各",
-        "多米尼加",
-        "UK",
-        "India",
-        "东德",
-        "中国",
-        "大陆",
-        "台湾",
-        "U.S.A.",
-        "阿联酋",
-        "厄瓜多尔",
-        "白俄罗斯",
-        "亚美尼亚",
-        "尼泊尔",
-        "叙利亚",
-        "沙特阿拉伯",
-        "Australia",
-        "柬埔寨",
-        "中国澳门",
-        "玻利维亚",
-        "斯里兰卡",
-        "塞内加尔",
-        "蒙古",
-        "伊拉克",
-        "缅甸",
-        "Turkey",
-        "哥斯达黎加",
-        "塞浦路斯",
-        "肯尼亚",
-        "阿塞拜疆",
-        "阿富汗",
-        "北马其顿",
-        "约旦",
-        "蘇聯",
-        "科索沃",
-        "印尼",
-        "危地马拉",
-        "Russia",
-        "乌兹别克斯坦",
-        "布基纳法索",
-        "吉尔吉斯斯坦",
-        "前苏联",
-        "巴拉圭",
-        "巴拿马",
-        "黑山",
-        "摩纳哥",
-        "马其顿",
-        "Germany",
-        "Indonesia",
-        "尼加拉瓜",
-        "Netherlands",
-        "加纳",
-        "Poland",
-        "Sweden",
-        "Mexico",
-        "俄国",
-        "埃塞俄比亚",
-        "Austria",
-        "刚果",
-        "马耳他",
-        "喀麦隆",
-        "Greece",
-        "France",
-        "Denmark",
-        "Belgium",
-        "老挝",
-        "Ireland",
-        "Argentina",
-        "Soviet",
-        "科威特",
-        "Portugal",
-        "Singapore",
-        "Union",
-        "Brazil",
-        "波斯尼亚和黑塞哥维那",
-        "孟加拉",
-        "Philippines",
-        "Indian",
-        "马里",
-        "Switzerland",
-        "Hungary",
-        "Norway",
-        "不丹",
-        "New",
-        "俄羅斯",
-        "Finland",
-        "香港",
-        "塞黑",
-        "Republic",
-        "圣马力诺",
-        "津巴布韦",
-        "Czech",
-        "澳洲",
-        "Zealand",
-        "South",
-        "Italy",
-        "摩尔多瓦",
-        "Israel",
-        "Kazakhstan",
-        "West",
-        "Romania",
-        "Ukraine",
-        "塔吉克斯坦",
-        "英國",
-        "Vietnam",
-        "台灣",
-        "Cyprus",
-        "BBC",
-        "Chile",
-        "Czechoslovakia",
-        "Africa",
-        "Spain",
-        "Iran",
-        "Iceland",
-        "Palestine",
-        "多米尼加共和国",
-        "加拿大Canada",
-        "乍得",
-        "尼日尔",
-        "联邦德国",
-        "列支敦士登",
-        "海地",
-        "苏丹",
-        "萨尔瓦多",
-        "索马里",
-        "Lebanon",
-        "Bulgaria",
-        "Senegal",
-        "Peru",
-        "China",
-        "卢旺达",
-        "india",
-        "丹麥",
-        "洪都拉斯",
-        "Lithuania",
-        "Cambodia",
-        "安哥拉",
-        "Cuba",
-        "Venezuela",
-        "Egypt",
-        "Taiwan",
-        "莫桑比克",
-        "原西德",
-        "Belarus",
-        "Colombia",
-        "Croatia",
-        "佛得角",
-        "US",
-        "argentina",
-        "Kenya",
-        "牙买加",
-        "科特迪瓦",
-        "毛里塔尼亚",
-        "Japan",
-        "坦桑尼亚",
-        "法罗群岛",
-        "乌干达",
-        "格陵兰",
-        "Guatemala",
-        "几内亚比绍",
-        "Malaysia",
-        "uk",
-        "Armenia",
-        "United",
-        "brasil",
-        "Syria",
-        "Philippine",
-        "Jamaica",
-        "Arab",
-        "巴林",
-        "也门",
-        "德國",
-        "Bolivia",
-        "Russian",
-        "台灣Taiwan",
-        "Serbia",
-        "Myanmar",
-        "Pakistan",
-        "刚果（金）",  # noqa: RUF001
-        "利比亚",
-        "博茨瓦纳",
-        "美國",
-        "巴哈马",
-        "Emirates",
-        "usa",
-        "Haiti",
-        "canada",
-        "比利時",
-        "纳米比亚",
-        "阿拉伯联合酋长国",
-        "poland",
-        "阿鲁巴",
-        "加蓬",
-        "赞比亚",
-        "The",
-        "Korea",
-        "Burkina",
-        "Faso",
-        "捷克共和国",
-        "Slovakia",
-        "Netherland",
-        "Uruguay",
-        "马达加斯加",
-        "Nepal",
-        "Qatar",
-        "苏里南",
-        "菲律宾Philippine",
-        "Estonia",
-        "Cameroon",
-        "贝宁",
-        "安道尔",
-        "and",
-        "奧地利",
-        "of",
-        "前西德",
-        "几内亚",
-        "巴布亚新几内亚",
-        "Ecuador",
-        "Paraguay",
-        "印度India",
-        "Mainland",
-        "塞拉利昂",
-        "荷蘭",
-        "南极洲",
-        "马其顿共和国",
-        "Guinea",
-        "Bangladesh",
-        "印度尼西亞",
-        "萨摩亚",
-        "荷兰Netherlands",
-        "Mongolia",
-        "Macedonia",
-        "Columbia",
-        "新加坡Singapore",
-        "斐济",
-        "Ghana",
-        "U.S.",
-        "Panama",
-        "North",
-        "澳大利亚Australia",
-        "the",
-        "菲律賓",
-        "Jordan",
-        "库克群岛",
-        "利比里亚",
-        "Kyrgyzstan",
-        "Bahamas",
-        "Thailand",
-        "中非",
-        "Islands",
-        "Turkmenistan",
-        "Iraq",
-        "澳大利亞",
-        "Morocco",
-        "蒙古国",
-        "美國USA",
-        "刚果(布)",
-        "莱索托",
-        "brazil",
-        "阿曼",
-        "East",
-        "Luxembourg",
-        "西撒哈拉",
-        "Danmark",
-        "泰國",
-        "Papua",
-        "Honduras",
-        "Madagascar",
-        "El",
-        "Salvador",
-        "English",
-        "伯利兹",
-        "塞尔维亚和黑山",
-        "Virgin",
-        "USSR",
-        "Albania",
-        "Yugoslavia",
-        "Brasil",
-        "芬蘭",
-        "特立尼达和多巴哥",
-        "英國UK",
-        "丹麦Denmark",
-        "Holland",
-        "巴巴多斯",
-        "Nigeria",
-        "Saudi",
-        "Arabia",
-        "阿根廷Argentina",
-        "波兰Poland",
-        "俄羅斯Russia",
-    }
+    # Sorted versions for greedy matching (longest first)
+    _SORTED_REGIONS: ClassVar[list[str]] = sorted(VALID_REGIONS, key=len, reverse=True)
+    _SORTED_GENRES: ClassVar[list[str]] = sorted(VALID_GENRES, key=len, reverse=True)
 
     def __new__(cls) -> "ImportService":
         """Create singleton instance."""
@@ -488,6 +86,42 @@ class ImportService:
             thread.start()
 
             return self._status
+
+    def _extract_metadata_from_string(self, s: str, is_genre: bool = True) -> set[str]:
+        """Extract valid genres or regions from a string using greedy matching."""
+        if not s:
+            return set()
+
+        found = set()
+        # Split by major delimiters into segments
+        segments = re.split(r"[/|\\,，、]", s)  # noqa: RUF001
+
+        whitelist = self._SORTED_GENRES if is_genre else self._SORTED_REGIONS
+        valid_set = self.VALID_GENRES if is_genre else self.VALID_REGIONS
+
+        for seg in segments:
+            cleaned_seg = seg.strip().strip("()（）[]:;\"'").strip()  # noqa: RUF001
+            if not cleaned_seg:
+                continue
+
+            # First try matching the entire segment (handles "Trinidad and Tobago")
+            if cleaned_seg in valid_set:
+                found.add(cleaned_seg)
+                continue
+
+            # If no whole match, find all whitelist items present in the segment
+            for item in whitelist:
+                if not item:
+                    continue
+                if item.isascii():
+                    # Use word boundaries for English tokens to avoid partial matches
+                    pattern = rf"\b{re.escape(item)}\b"
+                    if re.search(pattern, cleaned_seg):
+                        found.add(item)
+                elif item in cleaned_seg:
+                    found.add(item)
+
+        return found
 
     def _import_data(self, source_path: str) -> None:  # noqa: PLR0912, PLR0915
         """Internal method to perform the import."""
@@ -620,8 +254,12 @@ class ImportService:
                                     for r in (countries if isinstance(countries, list) else []) + (
                                         regions if isinstance(regions, list) else []
                                     ):
-                                        if isinstance(r, str) and r in self.VALID_REGIONS:
-                                            movie_region_names.add(r)
+                                        if isinstance(r, str):
+                                            movie_region_names.update(
+                                                self._extract_metadata_from_string(
+                                                    r, is_genre=False
+                                                )
+                                            )
 
                                     # Extract genres
                                     genres_list = detail.get("genres", [])
@@ -630,22 +268,52 @@ class ImportService:
                                     for g in (
                                         genres_list if isinstance(genres_list, list) else []
                                     ) + (types_list if isinstance(types_list, list) else []):
-                                        if isinstance(g, str) and g in self.VALID_GENRES:
-                                            movie_genre_names.add(g)
+                                        if isinstance(g, str):
+                                            movie_genre_names.update(
+                                                self._extract_metadata_from_string(g, is_genre=True)
+                                            )
 
                                     # Extract from card_subtitle or subtitle
                                     card_subtitle = detail.get("card_subtitle") or detail.get(
                                         "subtitle", ""
                                     )
                                     if card_subtitle:
-                                        # card_subtitle example: "2000 / 美国 / 剧情 喜剧"
-                                        # Split by any whitespace and "/" to get tokens
-                                        tokens = card_subtitle.replace("/", " ").split()
-                                        for token in tokens:
-                                            if token in self.VALID_GENRES:
-                                                movie_genre_names.add(token)
-                                            if token in self.VALID_REGIONS:
-                                                movie_region_names.add(token)
+                                        # First identify genres as markers
+                                        subtitle_genres = self._extract_metadata_from_string(
+                                            card_subtitle, is_genre=True
+                                        )
+                                        movie_genre_names.update(subtitle_genres)
+
+                                        # Use genres to find region boundaries
+                                        parts = [p.strip() for p in card_subtitle.split("/")]
+                                        if parts:
+                                            start_idx = 1 if re.match(r"^\d{4}$", parts[0]) else 0
+
+                                            # Find the first part containing any identified genre
+                                            genre_idx = -1
+                                            for i in range(start_idx, len(parts)):
+                                                tokens = self._extract_metadata_from_string(
+                                                    parts[i], is_genre=True
+                                                )
+                                                if tokens:
+                                                    genre_idx = i
+                                                    break
+
+                                            if genre_idx != -1:
+                                                # Parts before the first genre are regions
+                                                for i in range(start_idx, genre_idx):
+                                                    movie_region_names.update(
+                                                        self._extract_metadata_from_string(
+                                                            parts[i], is_genre=False
+                                                        )
+                                                    )
+                                            elif len(parts) > start_idx:
+                                                # Fallback if no genre found
+                                                movie_region_names.update(
+                                                    self._extract_metadata_from_string(
+                                                        parts[start_idx], is_genre=False
+                                                    )
+                                                )
 
                                     # Extract from tags
                                     tags = detail.get("tags", [])
@@ -653,12 +321,16 @@ class ImportService:
                                         for tag in tags:
                                             tag_name = tag.get("name", "")
                                             if tag_name:
-                                                tag_tokens = tag_name.replace("/", " ").split()
-                                                for token in tag_tokens:
-                                                    if token in self.VALID_GENRES:
-                                                        movie_genre_names.add(token)
-                                                    if token in self.VALID_REGIONS:
-                                                        movie_region_names.add(token)
+                                                movie_genre_names.update(
+                                                    self._extract_metadata_from_string(
+                                                        tag_name, is_genre=True
+                                                    )
+                                                )
+                                                movie_region_names.update(
+                                                    self._extract_metadata_from_string(
+                                                        tag_name, is_genre=False
+                                                    )
+                                                )
                             except json.JSONDecodeError as e:
                                 logger.warning(
                                     f"Failed to parse raw_data for douban_id {douban_id}: {e}"
