@@ -443,7 +443,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block w-72 shrink-0">
-        <div className="sticky top-20 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 max-h-[calc(100vh-theme(spacing.24))] overflow-y-auto">
+        <div className="sticky top-[5.5rem] bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 max-h-[calc(100vh-7rem)] overflow-y-auto">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <FunnelIcon className="w-5 h-5" />
             筛选
