@@ -14,7 +14,7 @@ function App() {
   useUrlSync();
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen overflow-x-hidden lg:overflow-x-visible bg-gray-50 dark:bg-gray-900 transition-colors">
       <NotificationToast />
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
