@@ -17,23 +17,41 @@ describe('useTheme', () => {
       writable: true,
     });
     document.documentElement.classList.remove('dark');
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
   });
 
   describe('Initial State', () => {
     it('should use dark theme when localStorage has dark', () => {
       localStorageMock.getItem.mockReturnValue('dark');
       const { result } = renderHook(() => useTheme());
+      expect(result.current.theme).toBe('dark');
       expect(result.current.isDark).toBe(true);
     });
 
     it('should use light theme when localStorage has light', () => {
       localStorageMock.getItem.mockReturnValue('light');
       const { result } = renderHook(() => useTheme());
+      expect(result.current.theme).toBe('light');
       expect(result.current.isDark).toBe(false);
     });
 
-    it('should use system preference when localStorage is empty', () => {
+    it('should default to system when localStorage is empty', () => {
       localStorageMock.getItem.mockReturnValue(null);
+      const { result } = renderHook(() => useTheme());
+      expect(result.current.theme).toBe('system');
+    });
+
+    it('should use system dark preference when theme is system', () => {
+      localStorageMock.getItem.mockReturnValue('system');
       window.matchMedia = vi.fn().mockImplementation((query: string) => ({
         matches: query === '(prefers-color-scheme: dark)',
         media: query,
@@ -48,70 +66,31 @@ describe('useTheme', () => {
       const { result } = renderHook(() => useTheme());
       expect(result.current.isDark).toBe(true);
     });
-
-    it('should default to light when localStorage is empty and system prefers light', () => {
-      localStorageMock.getItem.mockReturnValue(null);
-      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      }));
-
-      const { result } = renderHook(() => useTheme());
-      expect(result.current.isDark).toBe(false);
-    });
   });
 
   describe('toggleTheme', () => {
-    it('should toggle from light to dark', () => {
-      localStorageMock.getItem.mockReturnValue('light');
+    it('should cycle through system -> light -> dark', () => {
+      localStorageMock.getItem.mockReturnValue('system');
       const { result } = renderHook(() => useTheme());
+      expect(result.current.theme).toBe('system');
 
       act(() => {
         result.current.toggleTheme();
       });
-
-      expect(result.current.isDark).toBe(true);
-      expect(document.documentElement.classList.contains('dark')).toBe(true);
-    });
-
-    it('should toggle from dark to light', () => {
-      localStorageMock.getItem.mockReturnValue('dark');
-      const { result } = renderHook(() => useTheme());
-
-      act(() => {
-        result.current.toggleTheme();
-      });
-
-      expect(result.current.isDark).toBe(false);
-      expect(document.documentElement.classList.contains('dark')).toBe(false);
-    });
-
-    it('should persist dark theme to localStorage', () => {
-      localStorageMock.getItem.mockReturnValue('light');
-      const { result } = renderHook(() => useTheme());
-
-      act(() => {
-        result.current.toggleTheme();
-      });
-
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'dark');
-    });
-
-    it('should persist light theme to localStorage', () => {
-      localStorageMock.getItem.mockReturnValue('dark');
-      const { result } = renderHook(() => useTheme());
-
-      act(() => {
-        result.current.toggleTheme();
-      });
-
+      expect(result.current.theme).toBe('light');
       expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'light');
+
+      act(() => {
+        result.current.toggleTheme();
+      });
+      expect(result.current.theme).toBe('dark');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'dark');
+
+      act(() => {
+        result.current.toggleTheme();
+      });
+      expect(result.current.theme).toBe('system');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', 'system');
     });
   });
 
@@ -128,23 +107,34 @@ describe('useTheme', () => {
       expect(document.documentElement.classList.contains('dark')).toBe(false);
     });
 
-    it('should toggle dark class when toggling theme', () => {
-      localStorageMock.getItem.mockReturnValue('light');
-      const { result } = renderHook(() => useTheme());
+    it('should handle system theme changes', () => {
+      let changeHandler: (() => void) | undefined;
+      const mediaQueryMock = {
+        matches: false,
+        media: '(prefers-color-scheme: dark)',
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn((event, handler) => {
+          if (event === 'change') changeHandler = handler;
+        }),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      } as unknown as MediaQueryList;
+      window.matchMedia = vi.fn().mockReturnValue(mediaQueryMock);
+
+      localStorageMock.getItem.mockReturnValue('system');
+      renderHook(() => useTheme());
 
       expect(document.documentElement.classList.contains('dark')).toBe(false);
 
+      // Simulate system change to dark
       act(() => {
-        result.current.toggleTheme();
+        Object.defineProperty(mediaQueryMock, 'matches', { value: true });
+        if (changeHandler) changeHandler();
       });
 
       expect(document.documentElement.classList.contains('dark')).toBe(true);
-
-      act(() => {
-        result.current.toggleTheme();
-      });
-
-      expect(document.documentElement.classList.contains('dark')).toBe(false);
     });
   });
 });

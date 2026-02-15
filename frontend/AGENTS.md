@@ -196,6 +196,9 @@ See [root AGENTS.md](../AGENTS.md#testing-policy) for general testing guidelines
 
 ## Type Checking & Linting
 
+- **Avoid disabling ESLint rules**: Try to fix the underlying issue instead of using `eslint-disable`. If absolutely necessary, provide a comment explaining why.
+- **Strict TypeScript**: Ensure types are accurate and avoid `any` whenever possible.
+
 ```bash
 # Type check
 npm run typecheck

@@ -1,34 +1,54 @@
 import { useEffect, useState } from 'react';
 
+export type Theme = 'light' | 'dark' | 'system';
+
 export function useTheme() {
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'system';
+    const saved = localStorage.getItem('theme') as Theme | null;
+    return saved || 'system';
+  });
+
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false;
-    const saved = localStorage.getItem('theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return theme === 'dark';
   });
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    const root = window.document.documentElement;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const applyTheme = () => {
+      const effectiveTheme = theme === 'system' ? (mediaQuery.matches ? 'dark' : 'light') : theme;
+
+      if (effectiveTheme === 'dark') {
+        root.classList.add('dark');
+        setIsDark(true);
+      } else {
+        root.classList.remove('dark');
+        setIsDark(false);
+      }
+      localStorage.setItem('theme', theme);
+    };
+
+    applyTheme();
+
+    if (theme === 'system') {
+      mediaQuery.addEventListener('change', applyTheme);
+      return () => mediaQuery.removeEventListener('change', applyTheme);
     }
-  }, [isDark]);
+  }, [theme]);
 
   const toggleTheme = () => {
-    setIsDark((prev) => {
-      const newValue = !prev;
-      if (newValue) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      }
-      return newValue;
+    setTheme((prev) => {
+      if (prev === 'system') return 'light';
+      if (prev === 'light') return 'dark';
+      return 'system';
     });
   };
 
-  return { isDark, toggleTheme };
+  return { theme, setTheme, isDark, toggleTheme };
 }
