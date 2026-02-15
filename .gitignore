@@ -6,6 +6,9 @@ dist-ssr
 .env
 .env.*
 
+# Docker
+docker-compose.yml
+
 # Python
 __pycache__/
 *.py[cod]

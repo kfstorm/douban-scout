@@ -1,0 +1,46 @@
+# Docker Compose - Production Deployment Example
+#
+# This is a sample configuration for deploying Douban Scout with Docker Compose.
+# Copy this file to docker-compose.yml and customize as needed.
+#
+# Quick Start:
+#   1. Copy: cp docker-compose.example.yml docker-compose.yml
+#   2. Update IMPORT_API_KEY to a secure value
+#   3. Start: docker compose up -d
+#
+# Data Import:
+#   Mount your backup file to /import directory and use the API:
+#   curl -X POST http://localhost:3000/api/import \
+#     -H "Content-Type: application/json" \
+#     -H "X-API-Key: your-api-key" \
+#     -d '{"source_path": "/import/backup.sqlite3"}'
+
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: douban-scout-backend
+    restart: unless-stopped
+    volumes:
+      - backend-data:/data
+      # Mount your backup file for import (adjust path as needed)
+      # - /path/to/your/backup:/import:ro
+    environment:
+      DATA_DIR: /data
+      # IMPORTANT: Change this to a secure random key for production
+      IMPORT_API_KEY: change-me-in-production
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: douban-scout-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    environment:
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      - backend
+
+volumes:
+  backend-data:

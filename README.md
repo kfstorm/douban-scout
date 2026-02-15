@@ -21,7 +21,7 @@
 - **数据导入**：支持从豆瓣备份 SQLite 文件运行时导入数据
 - **接口限流**：内置灵活的限流机制，保护服务稳定性
 
-## 快速开始
+## 本地开发
 
 ### 前置条件
 
@@ -29,7 +29,7 @@
 - **Python**: v3.11 或更高版本
 - **uv**: 极速 Python 包管理器 ([安装指南](https://github.com/astral-sh/uv))
 
-### 1. 启动后端
+### 启动后端
 
 ```bash
 cd backend
@@ -37,7 +37,7 @@ uv sync
 uv run uvicorn app.main:app --reload
 ```
 
-### 2. 启动前端
+### 启动前端
 
 ```bash
 cd frontend
@@ -45,28 +45,63 @@ npm install
 npm run dev
 ```
 
-### 3. 访问应用
+### 访问应用
 
 - **Web 界面**: [http://localhost:3000](http://localhost:3000)
-- **API 文档**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+## 生产部署
+
+使用 Docker Compose 部署完整应用栈：
+
+```bash
+# 1. 复制配置文件
+cp docker-compose.example.yml docker-compose.yml
+
+# 2. 编辑配置文件，更新 IMPORT_API_KEY 为安全的随机密钥
+# 3. 启动服务
+docker compose up -d
+```
+
+访问应用：**Web 界面**: [http://localhost:3000](http://localhost:3000)
+
+**数据持久化**: 数据库和缓存数据存储在 Docker volume `backend-data` 中。
 
 ## 数据导入
 
 本应用支持在运行时从豆瓣备份 SQLite 文件导入数据。
 
-通过 API 提供豆瓣备份 SQLite 文件的绝对路径来触发导入：
+### 本地开发环境
 
 ```bash
-curl -X POST http://localhost:8000/api/import \
+curl -X POST http://localhost:3000/api/import \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-api-key" \
   -d '{"source_path": "/absolute/path/to/your/backup.sqlite3"}'
 ```
 
-查看进度：
+### 生产部署（Docker）
+
+1. 编辑 `docker-compose.yml`，将备份文件挂载到容器：
+
+   ```yaml
+   volumes:
+     - backend-data:/data
+     - /path/to/your/backup:/import:ro
+   ```
+
+2. 触发导入（注意：使用容器内的挂载路径）：
+
+   ```bash
+   curl -X POST http://localhost:3000/api/import \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: your-api-key" \
+     -d '{"source_path": "/import/backup.sqlite3"}'
+   ```
+
+查看导入进度：
 
 ```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8000/api/import/status
+curl -H "X-API-Key: your-api-key" http://localhost:3000/api/import/status
 ```
 
 *注意：导入在后台运行。数据库中的现有数据将被替换。*
