@@ -34,8 +34,8 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies")
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 6
-        assert data["total"] == 6
+        assert len(data["items"]) == 7
+        assert data["total"] == 7
 
     def test_get_movies_limit(self, client: TestClient, sample_movies: list):
         """Test movies limit parameter."""
@@ -44,7 +44,7 @@ class TestMoviesEndpoint:
         data = response.json()
         assert len(data["items"]) == 2
         assert data["next_cursor"] is not None
-        assert data["total"] == 6
+        assert data["total"] == 7
 
     def test_get_movies_limit_max_validation(self, client: TestClient):
         """Test limit cannot exceed 20."""
@@ -61,8 +61,8 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies?type=movie")
         assert response.status_code == 200
         data = response.json()
-        # 4 movies: Drama, Comedy, Action, Unrated
-        assert len(data["items"]) == 4
+        # 5 movies: Drama, Comedy, Action, Unrated, 海上钢琴师
+        assert len(data["items"]) == 5
         assert all(m["type"] == "movie" for m in data["items"])
 
     def test_get_movies_filter_by_tv(self, client: TestClient, sample_movies: list):
@@ -78,7 +78,7 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies?min_rating=8.0")
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 3
+        assert len(data["items"]) == 4
         assert all(m["rating"] >= 8.0 for m in data["items"])
 
     def test_get_movies_filter_by_max_rating(self, client: TestClient, sample_movies: list):
@@ -111,8 +111,8 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies?min_rating=0&max_rating=10")
         assert response.status_code == 200
         data = response.json()
-        # Should include all 6 movies: 5 rated + 1 unrated
-        assert len(data["items"]) == 6
+        # Should include all 7 movies: 6 rated + 1 unrated
+        assert len(data["items"]) == 7
         # Verify unrated movie is included
         unrated = [m for m in data["items"] if m["rating"] is None]
         assert len(unrated) == 1
@@ -142,9 +142,9 @@ class TestMoviesEndpoint:
         assert response.status_code == 200
         data = response.json()
         # Should include: rated <= 9.9 (all rated movies including 9.0) + unrated
-        # All rated movies: 8.0, 7.0, 8.5, 9.0, 7.5 = 5 movies
-        # Plus 1 unrated = 6 total
-        assert len(data["items"]) == 6
+        # All rated movies: 8.0, 7.0, 8.5, 9.0, 7.5, 9.3 = 6 movies
+        # Plus 1 unrated = 7 total
+        assert len(data["items"]) == 7
         # Verify unrated movie is included
         unrated = [m for m in data["items"] if m["rating"] is None]
         assert len(unrated) == 1
@@ -156,8 +156,9 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies?min_rating=7.0")
         assert response.status_code == 200
         data = response.json()
-        # Should only include rated movies >= 7.0 (5 movies), no unrated
-        assert len(data["items"]) == 5
+        # Should only include rated movies >= 7.0 (6 movies), no unrated
+        assert len(data["items"]) == 6
+
         # Verify no unrated movies
         unrated = [m for m in data["items"] if m["rating"] is None]
         assert len(unrated) == 0
@@ -172,7 +173,7 @@ class TestMoviesEndpoint:
         assert response.status_code == 200
         data = response.json()
         # Should only include rated movies >= 0.1, no unrated
-        assert len(data["items"]) == 5
+        assert len(data["items"]) == 6
         unrated = [m for m in data["items"] if m["rating"] is None]
         assert len(unrated) == 0
         assert all(m["rating"] is not None and m["rating"] >= 0.1 for m in data["items"])
@@ -185,7 +186,7 @@ class TestMoviesEndpoint:
         assert response.status_code == 200
         data = response.json()
         # Should only include rated movies 0.1-10, no unrated
-        assert len(data["items"]) == 5
+        assert len(data["items"]) == 6
         unrated = [m for m in data["items"] if m["rating"] is None]
         assert len(unrated) == 0
 
@@ -197,7 +198,7 @@ class TestMoviesEndpoint:
         assert response.status_code == 200
         data = response.json()
         # Should only include rated movies 0.1-9.9, no unrated
-        assert len(data["items"]) == 5
+        assert len(data["items"]) == 6
         unrated = [m for m in data["items"] if m["rating"] is None]
         assert len(unrated) == 0
 
@@ -224,8 +225,8 @@ class TestMoviesEndpoint:
         response = client.get("/api/movies")
         assert response.status_code == 200
         data = response.json()
-        # Should include all 6 movies
-        assert len(data["items"]) == 6
+        # Should include all 7 movies
+        assert len(data["items"]) == 7
         # Verify unrated movie is included
         unrated = [m for m in data["items"] if m["rating"] is None]
         assert len(unrated) == 1
@@ -263,6 +264,29 @@ class TestMoviesEndpoint:
         data = response.json()
         assert len(data["items"]) == 1
         assert data["items"][0]["title"] == "Drama Movie"
+
+    def test_get_movies_search_substring(self, client: TestClient, sample_movies: list):
+        """Test searching movies by title substring."""
+        # Test Chinese substring
+        response = client.get("/api/movies?search=钢琴")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["title"] == "海上钢琴师"
+
+        # Test English substring
+        response = client.get("/api/movies?search=rama")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["title"] == "Drama Movie"
+
+        # Test multiple words
+        response = client.get("/api/movies?search=海上+钢琴")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["title"] == "海上钢琴师"
 
     def test_get_movies_search_no_results(self, client: TestClient, sample_movies: list):
         """Test search with no results."""
@@ -384,7 +408,7 @@ class TestMoviesEndpoint:
         assert response.status_code == 200
         data = response.json()
         # Invalid cursor falls back to returning all items
-        assert len(data["items"]) == 6
+        assert len(data["items"]) == 7
 
     def test_get_movies_combined_filters(self, client: TestClient, movies_with_genres: list):
         """Test combining multiple filters."""
@@ -458,8 +482,8 @@ class TestStatsEndpoint:
         response = client.get("/api/movies/stats")
         assert response.status_code == 200
         data = response.json()
-        # 4 movies: Drama, Comedy, Action, Unrated
-        assert data["total_movies"] == 4
+        # 5 movies: Drama, Comedy, Action, Unrated, 海上钢琴师
+        assert data["total_movies"] == 5
         assert data["total_tv"] == 2
         assert data["total_genres"] == 0
 

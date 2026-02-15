@@ -15,6 +15,8 @@ from app import database as app_database
 from app.cache import cache_manager
 from app.config import settings
 from app.database import (
+    FTS_CREATE_TABLE_SQL,
+    FTS_INSERT_ALL_SQL,
     Base,
     Genre,
     Movie,
@@ -226,12 +228,7 @@ def test_engine(temp_db_path: str):
 
     # Create FTS5 table for tests
     with engine.begin() as conn:
-        conn.execute(
-            text(
-                "CREATE VIRTUAL TABLE movie_search USING "
-                "fts5(title, content='movies', content_rowid='id')"
-            )
-        )
+        conn.execute(text(FTS_CREATE_TABLE_SQL))
 
     yield engine
 
@@ -346,13 +343,21 @@ def sample_movies(db_session: Session) -> list[Movie]:
             rating_count=0,
             type="movie",
         ),
+        Movie(
+            id=5001,
+            title="海上钢琴师",
+            year=1998,
+            rating=9.3,
+            rating_count=1500000,
+            type="movie",
+        ),
     ]
     for movie in movies:
         db_session.add(movie)
     db_session.commit()
 
     # Update FTS5 index for tests
-    db_session.execute(text("INSERT INTO movie_search(rowid, title) SELECT id, title FROM movies"))
+    db_session.execute(text(FTS_INSERT_ALL_SQL))
     db_session.commit()
 
     for movie in movies:

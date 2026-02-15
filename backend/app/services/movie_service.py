@@ -8,7 +8,7 @@ from sqlalchemy import func, text
 from sqlalchemy.orm import Query, Session, selectinload
 
 from app.cache import cached
-from app.database import Genre, Movie, MovieGenre, MovieRegion, Region
+from app.database import FTS_TABLE_NAME, Genre, Movie, MovieGenre, MovieRegion, Region
 from app.schemas import (
     GenreCount,
     MovieResponse,
@@ -232,12 +232,16 @@ class MovieService:
 
         # Apply search first using FTS5 if available
         if search:
-            search_query = text(
-                "SELECT rowid FROM movie_search WHERE movie_search MATCH :search_term"
-            )
-            query = query.filter(
-                Movie.id.in_(db.execute(search_query, {"search_term": search}).scalars().all())
-            )
+            # Split search term into words and use LIKE for substring matching
+            # With trigram tokenizer, LIKE '%term%' is optimized
+            search_terms = search.split()
+            if search_terms:
+                conditions = " AND ".join(
+                    [f"title LIKE :term_{i}" for i in range(len(search_terms))]
+                )
+                params = {f"term_{i}": f"%{term}%" for i, term in enumerate(search_terms)}
+                search_query = text(f"SELECT rowid FROM {FTS_TABLE_NAME} WHERE {conditions}")
+                query = query.filter(Movie.id.in_(db.execute(search_query, params).scalars().all()))
 
         if type:
             query = query.filter(Movie.type == type)

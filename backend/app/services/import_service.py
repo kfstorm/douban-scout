@@ -16,6 +16,9 @@ from sqlalchemy.orm import Session
 from app import database
 from app.cache import cache_manager
 from app.database import (
+    FTS_CREATE_TABLE_SQL,
+    FTS_INSERT_ALL_SQL,
+    FTS_TABLE_NAME,
     Base,
     Genre,
     Movie,
@@ -770,13 +773,9 @@ class ImportService:
 
             # Create FTS5 table
             logger.info("Creating FTS5 virtual table for search...")
-            cursor.execute("DROP TABLE IF EXISTS movie_search")
-            # We use 'unicode61' tokenizer as it is safer for mixed content
-            cursor.execute(
-                "CREATE VIRTUAL TABLE movie_search USING "
-                "fts5(title, content='movies', content_rowid='id')"
-            )
-            cursor.execute("INSERT INTO movie_search(rowid, title) SELECT id, title FROM movies")
+            cursor.execute(f"DROP TABLE IF EXISTS {FTS_TABLE_NAME}")
+            cursor.execute(FTS_CREATE_TABLE_SQL)
+            cursor.execute(FTS_INSERT_ALL_SQL)
 
             # ANALYZE for query planner
             logger.info("Running ANALYZE...")

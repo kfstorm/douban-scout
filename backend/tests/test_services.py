@@ -69,7 +69,7 @@ class TestImportService:
         headers = {"X-API-Key": "test-api-key"}
 
         initial_count = db_session.query(Movie).count()
-        assert initial_count == 6
+        assert initial_count == 7
 
         response = client.post(
             "/api/import", json={"source_path": temp_source_db_path}, headers=headers
@@ -247,7 +247,7 @@ class TestImportService:
 
         # Initial count should be from sample_movies
         initial_count = db_session.query(Movie).count()
-        assert initial_count == 6
+        assert initial_count == 7
 
         def side_effect_fail(*args, **kwargs):
             raise Exception("Simulated import failure")
@@ -269,10 +269,10 @@ class TestImportService:
             assert status["status"] == "failed"
             assert "Simulated import failure" in status["message"]
 
-        # Check database state - it should STILL have 6 movies if atomic
+        # Check database state - it should STILL have 7 movies if atomic
         db_session.expire_all()
         final_count = db_session.query(Movie).count()
-        assert final_count == 6
+        assert final_count == 7
 
     def test_import_does_not_extract_from_photos_field(
         self, client, populated_source_db, temp_source_db_path: str, db_session

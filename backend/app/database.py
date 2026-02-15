@@ -22,6 +22,17 @@ from app.config import settings
 Base = declarative_base()
 
 
+# FTS5 Search Constants
+FTS_TABLE_NAME = "movie_search"
+# Use 'trigram' tokenizer to support arbitrary substring search (including CJK)
+# Requires SQLite 3.34.0+
+FTS_CREATE_TABLE_SQL = (
+    f"CREATE VIRTUAL TABLE {FTS_TABLE_NAME} USING "
+    "fts5(title, content='movies', content_rowid='id', tokenize='trigram')"
+)
+FTS_INSERT_ALL_SQL = f"INSERT INTO {FTS_TABLE_NAME}(rowid, title) SELECT id, title FROM movies"
+
+
 class Movie(Base):  # type: ignore[misc, valid-type]
     """Movie model representing a Douban movie or TV show."""
 
