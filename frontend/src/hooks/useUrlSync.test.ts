@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useUrlSync } from './useUrlSync';
 import { useFilterStore } from '../store/useFilterStore';
 
@@ -17,6 +17,7 @@ describe('useUrlSync', () => {
       maxYear: null,
       selectedGenres: [],
       excludedGenres: [],
+      selectedRegions: [],
       searchQuery: '',
       sortBy: 'rating',
       sortOrder: 'desc',
@@ -67,74 +68,39 @@ describe('useUrlSync', () => {
       expect(useFilterStore.getState().type).toBeNull();
     });
 
-    it('should sync min_rating from URL', () => {
-      mockLocation.search = '?min_rating=7';
+    it('should sync minRating from URL', () => {
+      mockLocation.search = '?minRating=7';
       renderHook(() => useUrlSync());
 
       expect(useFilterStore.getState().minRating).toBe(7);
     });
 
-    it('should sync max_rating from URL', () => {
-      mockLocation.search = '?max_rating=9';
+    it('should sync maxRating from URL', () => {
+      mockLocation.search = '?maxRating=9';
       renderHook(() => useUrlSync());
 
       expect(useFilterStore.getState().maxRating).toBe(9);
     });
 
-    it('should sync min_rating_count from URL', () => {
-      mockLocation.search = '?min_rating_count=1000';
+    it('should sync minRatingCount from URL', () => {
+      mockLocation.search = '?minRatingCount=1000';
       renderHook(() => useUrlSync());
 
       expect(useFilterStore.getState().minRatingCount).toBe(1000);
     });
 
-    it('should sync min_year from URL', () => {
-      mockLocation.search = '?min_year=2000';
+    it('should sync minYear from URL', () => {
+      mockLocation.search = '?minYear=2000';
       renderHook(() => useUrlSync());
 
       expect(useFilterStore.getState().minYear).toBe(2000);
     });
 
-    it('should sync max_year from URL', () => {
-      mockLocation.search = '?max_year=2023';
+    it('should sync maxYear from URL', () => {
+      mockLocation.search = '?maxYear=2023';
       renderHook(() => useUrlSync());
 
       expect(useFilterStore.getState().maxYear).toBe(2023);
-    });
-
-    it('should sync search query from URL', () => {
-      mockLocation.search = '?q=测试';
-      renderHook(() => useUrlSync());
-
-      expect(useFilterStore.getState().searchQuery).toBe('测试');
-    });
-
-    it('should sync sort_by from URL', () => {
-      mockLocation.search = '?sort_by=year';
-      renderHook(() => useUrlSync());
-
-      expect(useFilterStore.getState().sortBy).toBe('year');
-    });
-
-    it('should sync sort_order from URL', () => {
-      mockLocation.search = '?sort_order=asc';
-      renderHook(() => useUrlSync());
-
-      expect(useFilterStore.getState().sortOrder).toBe('asc');
-    });
-
-    it('should sync genres from URL', () => {
-      mockLocation.search = '?genres=动作,喜剧';
-      renderHook(() => useUrlSync());
-
-      expect(useFilterStore.getState().selectedGenres).toEqual(['动作', '喜剧']);
-    });
-
-    it('should sync exclude_genres from URL', () => {
-      mockLocation.search = '?exclude_genres=恐怖,惊悚';
-      renderHook(() => useUrlSync());
-
-      expect(useFilterStore.getState().excludedGenres).toEqual(['恐怖', '惊悚']);
     });
 
     it('should not override store if URL is empty', () => {
@@ -146,6 +112,86 @@ describe('useUrlSync', () => {
 
       expect(useFilterStore.getState().type).toBe('movie');
       expect(useFilterStore.getState().minRating).toBe(8);
+    });
+  });
+
+  describe('Generic Sync Coverage (Exact Match)', () => {
+    const getParamName = (key: string) => key;
+
+    const testValues: Record<string, string | string[] | number | null> = {
+      type: 'tv',
+      minRating: 8,
+      maxRating: 9,
+      minRatingCount: 500,
+      minYear: 1990,
+      maxYear: 2010,
+      selectedGenres: ['动作'],
+      excludedGenres: ['喜剧'],
+      selectedRegions: ['中国'],
+      searchQuery: 'test',
+      sortBy: 'year',
+      sortOrder: 'asc',
+    };
+
+    const state = useFilterStore.getState();
+    const stateKeys = Object.keys(state).filter(
+      (key) => typeof (state as unknown as Record<string, unknown>)[key] !== 'function',
+    );
+
+    stateKeys.forEach((storeKey) => {
+      const param = getParamName(storeKey);
+      const value = testValues[storeKey];
+
+      it(`should sync ${storeKey} from URL to Store (param: ${param})`, () => {
+        if (value === undefined) {
+          throw new Error(
+            `No test value defined for filter '${storeKey}'. Please add it to 'testValues' in the test file.`,
+          );
+        }
+
+        const urlValue = Array.isArray(value) ? value.join(',') : String(value);
+        mockLocation.search = `?${param}=${encodeURIComponent(urlValue)}`;
+        renderHook(() => useUrlSync());
+
+        const currentState = useFilterStore.getState() as unknown as Record<string, unknown>;
+        expect(
+          currentState[storeKey],
+          `Filter '${storeKey}' was not correctly synchronized from URL parameter '${param}' to the Store. Check 'syncUrlToStore' in useUrlSync.ts.`,
+        ).toEqual(value);
+      });
+
+      it(`should sync ${storeKey} from Store to URL (param: ${param})`, () => {
+        renderHook(() => useUrlSync());
+
+        const currentState = useFilterStore.getState() as unknown as Record<string, unknown>;
+        const actionName = `set${storeKey.charAt(0).toUpperCase()}${storeKey.slice(1)}`;
+
+        // Special cases for action names if they don't follow the pattern
+        let action = currentState[actionName];
+        if (storeKey === 'selectedGenres') action = currentState.setSelectedGenres;
+        if (storeKey === 'excludedGenres') action = currentState.setExcludedGenres;
+        if (storeKey === 'selectedRegions') action = currentState.setSelectedRegions;
+
+        if (typeof action !== 'function') {
+          throw new Error(
+            `Action '${actionName}' not found for key '${storeKey}'. Ensure the store provides a setter following the naming convention.`,
+          );
+        }
+
+        act(() => {
+          (action as (v: unknown) => void)(value);
+        });
+
+        const urlValue = Array.isArray(value) ? value.join(',') : String(value);
+        expect(
+          window.history.replaceState,
+          `Changing filter '${storeKey}' in the Store did not update the URL parameter '${param}'. Check the dependency array and logic in the 'Store -> URL' useEffect in useUrlSync.ts.`,
+        ).toHaveBeenCalledWith(
+          null,
+          '',
+          expect.stringContaining(`${param}=${encodeURIComponent(urlValue)}`),
+        );
+      });
     });
   });
 
@@ -165,15 +211,15 @@ describe('useUrlSync', () => {
   });
 
   describe('Invalid Sort Values', () => {
-    it('should not set invalid sort_by value', () => {
-      mockLocation.search = '?sort_by=invalid';
+    it('should not set invalid sortBy value', () => {
+      mockLocation.search = '?sortBy=invalid';
       renderHook(() => useUrlSync());
 
       expect(useFilterStore.getState().sortBy).toBe('rating');
     });
 
-    it('should not set invalid sort_order value', () => {
-      mockLocation.search = '?sort_order=invalid';
+    it('should not set invalid sortOrder value', () => {
+      mockLocation.search = '?sortOrder=invalid';
       renderHook(() => useUrlSync());
 
       expect(useFilterStore.getState().sortOrder).toBe('desc');
