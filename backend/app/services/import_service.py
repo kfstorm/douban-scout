@@ -169,6 +169,9 @@ class ImportService:
         "India",
         "东德",
         "中国",
+        "大陆",
+        "台湾",
+        "U.S.A.",
         "阿联酋",
         "厄瓜多尔",
         "白俄罗斯",
@@ -652,6 +655,26 @@ class ImportService:
                                                 movie_genre_names.update(found_genres_in_subtitle)
                                             if not movie_region_names:
                                                 movie_region_names.update(found_regions_in_subtitle)
+
+                                    # Fallback to tags for genres and regions
+                                    if not movie_genre_names or not movie_region_names:
+                                        tags = detail.get("tags", [])
+                                        if isinstance(tags, list):
+                                            for tag in tags:
+                                                tag_name = tag.get("name", "")
+                                                if tag_name:
+                                                    tag_tokens = tag_name.replace("/", " ").split()
+                                                    for token in tag_tokens:
+                                                        if (
+                                                            not movie_genre_names
+                                                            and token in self.VALID_GENRES
+                                                        ):
+                                                            movie_genre_names.add(token)
+                                                        if (
+                                                            not movie_region_names
+                                                            and token in self.VALID_REGIONS
+                                                        ):
+                                                            movie_region_names.add(token)
                             except json.JSONDecodeError as e:
                                 logger.warning(
                                     f"Failed to parse raw_data for douban_id {douban_id}: {e}"

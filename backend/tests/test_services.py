@@ -49,14 +49,14 @@ class TestImportService:
         final_response = client.get("/api/import/status", headers=headers)
         final_status = final_response.json()
         assert final_status["status"] == "completed"
-        # 7 original + 5 new
-        assert final_status["processed"] == 12
+        # 7 original + 6 new (added 走出非洲, 青木瓜之味, 功夫, 岁月的童话, 云上的日子, 秋海棠)
+        assert final_status["processed"] == 13
         assert final_status["percentage"] == 100.0
 
         db_session.expire_all()
         result = db_session.execute(text("SELECT COUNT(*) FROM movies"))
         count = result.scalar()
-        assert count == 12
+        assert count == 13
 
         genre_result = db_session.execute(text("SELECT COUNT(*) FROM movie_genres"))
         genre_count = genre_result.scalar()
@@ -66,8 +66,9 @@ class TestImportService:
         # 岁月的童话: 剧情 爱情 动画 (3)
         # 走出非洲: 冒险 传记 剧情 爱情 (4)
         # 云上的日子: 剧情 爱情 情色 (3)
-        # Total: 12 + 17 = 29
-        assert genre_count == 29
+        # 秋海棠: 爱情 (1)
+        # Total: 12 + 18 = 30
+        assert genre_count == 30
 
     def test_import_clears_existing_data(
         self, client, sample_movies, populated_source_db, temp_source_db_path: str, db_session
@@ -97,7 +98,7 @@ class TestImportService:
         # Close session to force new connection that sees the swapped file
         db_session.close()
         final_count = db_session.query(Movie).count()
-        assert final_count == 12
+        assert final_count == 13
 
     def test_import_extracts_genres_correctly(
         self, client, populated_source_db, temp_source_db_path: str, db_session
@@ -329,6 +330,30 @@ class TestImportService:
         regions = [r.region_obj.name for r in movie_papaya.regions]
         assert "越南" in regions
         assert "法国" in regions
+
+    def test_import_extracts_from_tags_fallback(
+        self, client, populated_source_db, temp_source_db_path: str, db_session
+    ):
+        """Test that genres and regions are extracted from tags when other fields are missing."""
+        ImportService._instance = None
+        headers = {"X-API-Key": "test-api-key"}
+        client.post("/api/import", json={"source_path": temp_source_db_path}, headers=headers)
+
+        for _ in range(50):
+            time.sleep(0.2)
+            status_response = client.get("/api/import/status", headers=headers)
+            status = status_response.json()
+            if status["status"] == "completed":
+                break
+
+        db_session.expire_all()
+        # ID 1298274 (秋海棠) has '大陆' and '爱情' in tags
+        movie = db_session.query(Movie).filter(Movie.id == 1298274).first()
+        assert movie is not None
+        genres = [g.genre_obj.name for g in movie.genres]
+        assert "爱情" in genres
+        regions = [r.region_obj.name for r in movie.regions]
+        assert "大陆" in regions
 
     def test_import_does_not_extract_from_photos_field(
         self, client, populated_source_db, temp_source_db_path: str, db_session
