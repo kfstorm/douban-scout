@@ -251,7 +251,8 @@ def populated_source_db(source_db_connection: sqlite3.Connection) -> sqlite3.Con
             1943,
             7.2,
             '{"detail": {"rating": {"count": 234}, "card_subtitle": '
-            '"1943 / 大陆 / 马徐维邦 / 吕玉堃 李丽华", "tags": [{"name": "大陆 爱情 黑白"}]}, '
+            '"1943 / 大陆 / 马徐维邦 / 吕玉堃 李丽华", "tags": '
+            '[{"name": "大陆 台湾 爱情 剧情 黑白"}]}, '
             '"detail_source": "explore:movie:score_range:7,8/tags:1943"}',
             "movie",
             1612985849.0,
