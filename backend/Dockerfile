@@ -1,17 +1,17 @@
 # Build stage - install dependencies
-FROM ghcr.io/astral-sh/uv:python3.11-bookworm AS builder
+FROM ghcr.io/astral-sh/uv:python3.11-alpine AS builder
 
 WORKDIR /app
 
 # Copy dependency files first for better layer caching
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies with cache mount
+# Install dependencies with cache mount (excluding dev dependencies for production)
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project
+    uv sync --frozen --no-install-project --no-dev
 
 # Runtime stage
-FROM python:3.11-slim-bookworm AS runtime
+FROM python:3.11-alpine AS runtime
 
 WORKDIR /app
 
@@ -29,8 +29,8 @@ COPY app/ ./app/
 
 # Create data directory and non-root user
 RUN mkdir -p /data && \
-    groupadd -r appuser --gid=1000 && \
-    useradd -r -g appuser --uid=1000 --home-dir=/data appuser && \
+    addgroup -S appuser -g 1000 && \
+    adduser -S appuser -u 1000 -G appuser -h /data && \
     chown -R appuser:appuser /app /data
 
 USER appuser
