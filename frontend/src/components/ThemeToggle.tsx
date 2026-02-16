@@ -1,7 +1,7 @@
-import React, { Fragment } from 'react';
+import React, { Fragment, type Dispatch, type SetStateAction } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { SunIcon, MoonIcon, ComputerDesktopIcon, CheckIcon } from '@heroicons/react/24/outline';
-import { useTheme, type Theme } from '../hooks/useTheme';
+import { type Theme } from '../hooks/useTheme';
 
 const themes: { id: Theme; name: string; icon: typeof SunIcon }[] = [
   { id: 'system', name: '自动模式', icon: ComputerDesktopIcon },
@@ -9,9 +9,12 @@ const themes: { id: Theme; name: string; icon: typeof SunIcon }[] = [
   { id: 'dark', name: '深色模式', icon: MoonIcon },
 ];
 
-export const ThemeToggle: React.FC = () => {
-  const { theme, setTheme } = useTheme();
+interface ThemeToggleProps {
+  theme: Theme;
+  setTheme: Dispatch<SetStateAction<Theme>>;
+}
 
+export const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, setTheme }) => {
   const CurrentIcon = themes.find((t) => t.id === theme)?.icon || ComputerDesktopIcon;
 
   return (
