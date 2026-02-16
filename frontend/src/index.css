@@ -1,9 +1,69 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* Define class-based dark mode for Tailwind v4 */
+@variant dark (&:is(.dark, .dark *));
+
+/* Import Catppuccin flavors */
+@import '@catppuccin/tailwindcss/mocha.css';
+
+/*
+  Workaround for Tailwind v4 + Catppuccin issue #37:
+  We apply .latte or .mocha classes to <html> via useTheme hook
+  to ensure variables are correctly switched.
+*/
+
+@theme {
+  --color-primary-50: var(--color-ctp-mauve-50);
+  --color-primary-100: var(--color-ctp-mauve-100);
+  --color-primary-200: var(--color-ctp-mauve-200);
+  --color-primary-300: var(--color-ctp-mauve-300);
+  --color-primary-400: var(--color-ctp-mauve-400);
+  --color-primary-500: var(--color-ctp-mauve-500);
+  --color-primary-600: var(--color-ctp-mauve-600);
+  --color-primary-700: var(--color-ctp-mauve-700);
+  --color-primary-800: var(--color-ctp-mauve-800);
+  --color-primary-900: var(--color-ctp-mauve-900);
+  --color-primary-950: var(--color-ctp-mauve-950);
+}
 
 @layer base {
-  body {
-    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+  /* Use the background and text variables provided by the current flavor */
+  html {
+    background-color: var(--color-ctp-base);
+    color: var(--color-ctp-text);
   }
+
+  body {
+    @apply transition-colors duration-200;
+  }
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-ctp-overlay0);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ctp-overlay1);
+}
+
+/* Focus and Selection */
+:focus-visible {
+  outline: 2px solid var(--color-ctp-mauve);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-ctp-mauve);
+  color: var(--color-ctp-base);
 }

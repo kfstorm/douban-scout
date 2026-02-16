@@ -11,11 +11,11 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
   const [showInfo, setShowInfo] = useState(false);
 
   const getRatingColor = (rating: number | null) => {
-    if (!rating) return 'bg-gray-400';
-    if (rating >= 9) return 'bg-green-500';
-    if (rating >= 8) return 'bg-blue-500';
-    if (rating >= 7) return 'bg-yellow-500';
-    return 'bg-orange-500';
+    if (!rating) return 'bg-ctp-overlay0';
+    if (rating >= 9) return 'bg-ctp-green';
+    if (rating >= 8) return 'bg-ctp-blue';
+    if (rating >= 7) return 'bg-ctp-yellow';
+    return 'bg-ctp-peach';
   };
 
   const formatCount = (count: number) => {
@@ -55,10 +55,10 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
       href={doubanUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 relative"
+      className="group block bg-ctp-surface0 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 relative"
       onMouseLeave={() => setShowInfo(false)}
     >
-      <div className="aspect-[2/3] relative rounded-t-lg overflow-hidden">
+      <div className="aspect-2/3 relative rounded-t-lg overflow-hidden">
         <PosterImage
           id={movie.id}
           title={movie.title}
@@ -67,7 +67,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
         {/* Rating badge */}
         <div
-          className={`absolute top-2 right-2 ${getRatingColor(movie.rating)} text-white text-sm font-bold px-2 py-1 rounded`}
+          className={`absolute top-2 right-2 ${getRatingColor(movie.rating)} text-ctp-base text-sm font-bold px-2 py-1 rounded-sm`}
         >
           {movie.rating ? movie.rating.toFixed(1) : '无'}
         </div>
@@ -75,7 +75,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
       {/* Info icon with tooltip - Improved for mobile */}
       <div
-        className="absolute top-0 left-0 p-2 z-30 group/info outline-none"
+        className="absolute top-0 left-0 p-2 z-30 group/info outline-hidden"
         onClick={toggleInfo}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -86,35 +86,37 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         tabIndex={0}
         aria-label="查看详情"
       >
-        <div className="bg-black/20 dark:bg-black/40 backdrop-blur-sm rounded-full p-1 shadow-md transition-colors group-hover/info:bg-black/40 dark:group-hover/info:bg-black/60">
+        <div className="bg-black/20 backdrop-blur-xs rounded-full p-1 shadow-md transition-colors group-hover/info:bg-black/40">
           <InformationCircleIcon className="w-5 h-5 text-white/90 group-hover/info:text-white transition-colors cursor-help" />
         </div>
         <div
-          className={`absolute left-0 top-12 w-max max-w-[160px] sm:max-w-[180px] p-2 bg-gray-900/95 text-white text-xs rounded shadow-lg transition-all pointer-events-none ${
+          className={`absolute left-0 top-12 w-max max-w-[160px] sm:max-w-[180px] p-2 bg-ctp-crust/95 text-ctp-text text-xs rounded shadow-lg transition-all pointer-events-none ${
             showInfo
               ? 'opacity-100 visible'
               : 'opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible'
           }`}
         >
-          <div className="mb-1 font-semibold border-b border-white/20 pb-1">作品详情</div>
-          <div className="font-medium text-white mb-2 leading-tight">{movie.title}</div>
-          <div className="text-gray-300 mt-1">数据更新时间: {timeAgo(movie.updated_at)}</div>
-          <div className="text-gray-300 mt-1">评分人数: {movie.rating_count.toLocaleString()}</div>
-          <div className="text-gray-300 mt-1 leading-relaxed break-words">
+          <div className="mb-1 font-semibold border-b border-ctp-surface0 pb-1">作品详情</div>
+          <div className="font-medium text-ctp-text mb-2 leading-tight">{movie.title}</div>
+          <div className="text-ctp-subtext0 mt-1">数据更新时间: {timeAgo(movie.updated_at)}</div>
+          <div className="text-ctp-subtext0 mt-1">
+            评分人数: {movie.rating_count.toLocaleString()}
+          </div>
+          <div className="text-ctp-subtext0 mt-1 leading-relaxed wrap-break-word">
             制片国家/地区: {movie.regions.join(', ') || '未知'}
           </div>
-          <div className="text-gray-300 mt-1 leading-relaxed break-words">
+          <div className="text-ctp-subtext0 mt-1 leading-relaxed wrap-break-word">
             全部类型: {movie.genres.join(', ') || '无'}
           </div>
         </div>
       </div>
 
       <div className="p-4">
-        <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+        <h3 className="font-semibold text-ctp-text line-clamp-2 mb-2 group-hover:text-ctp-mauve transition-colors">
           {movie.title}
         </h3>
 
-        <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400 mb-3">
+        <div className="space-y-1 text-xs text-ctp-subtext0 mb-3">
           <div className="flex items-center justify-between">
             <span>{movie.year || '未知年份'}</span>
             <span className="flex items-center gap-1">
@@ -133,13 +135,13 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
             {movie.genres.slice(0, 3).map((genre) => (
               <span
                 key={genre}
-                className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                className="text-xs px-2 py-1 bg-ctp-surface1 text-ctp-subtext0 rounded-sm"
               >
                 {genre}
               </span>
             ))}
             {movie.genres.length > 3 && (
-              <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+              <span className="text-xs px-2 py-1 bg-ctp-surface1 text-ctp-subtext0 rounded-sm">
                 +{movie.genres.length - 3}
               </span>
             )}

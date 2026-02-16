@@ -14,30 +14,30 @@ function App() {
   useUrlSync();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-ctp-base transition-colors">
       <NotificationToast />
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
+      <header className="sticky top-0 z-40 bg-ctp-surface0 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
               <img src="/logo.svg" alt="" className="w-8 h-8" />
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">瓣影寻踪</h1>
+              <h1 className="text-xl font-bold text-ctp-text">瓣影寻踪</h1>
             </div>
 
             {/* Actions */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsFilterOpen(true)}
-                className="lg:hidden p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                className="lg:hidden p-2 text-ctp-subtext0 hover:bg-ctp-surface1 rounded-lg"
                 aria-label="打开筛选"
               >
                 <FunnelIcon className="w-5 h-5" />
               </button>
               <button
                 onClick={resetFilters}
-                className="hidden sm:block px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                className="hidden sm:block px-3 py-2 text-sm text-ctp-subtext0 hover:text-ctp-text"
               >
                 重置筛选
               </button>
@@ -61,9 +61,9 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
+      <footer className="bg-ctp-surface0 border-t border-ctp-surface1 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-center text-sm text-ctp-subtext0">
             瓣影寻踪 - 基于 FastAPI + React 构建
           </p>
         </div>

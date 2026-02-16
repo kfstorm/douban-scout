@@ -23,14 +23,13 @@ export function useTheme() {
 
     const applyTheme = () => {
       const effectiveTheme = theme === 'system' ? (mediaQuery.matches ? 'dark' : 'light') : theme;
+      const isDarkNow = effectiveTheme === 'dark';
 
-      if (effectiveTheme === 'dark') {
-        root.classList.add('dark');
-        setIsDark(true);
-      } else {
-        root.classList.remove('dark');
-        setIsDark(false);
-      }
+      root.classList.toggle('dark', isDarkNow);
+      root.classList.toggle('mocha', isDarkNow);
+      root.classList.toggle('latte', !isDarkNow);
+
+      setIsDark(isDarkNow);
       localStorage.setItem('theme', theme);
     };
 

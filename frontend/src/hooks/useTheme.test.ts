@@ -95,16 +95,20 @@ describe('useTheme', () => {
   });
 
   describe('DOM class manipulation', () => {
-    it('should add dark class to document when theme is dark', () => {
+    it('should add dark and mocha classes to document when theme is dark', () => {
       localStorageMock.getItem.mockReturnValue('dark');
       renderHook(() => useTheme());
       expect(document.documentElement.classList.contains('dark')).toBe(true);
+      expect(document.documentElement.classList.contains('mocha')).toBe(true);
+      expect(document.documentElement.classList.contains('latte')).toBe(false);
     });
 
-    it('should remove dark class from document when theme is light', () => {
+    it('should remove dark and mocha classes and add latte from document when theme is light', () => {
       localStorageMock.getItem.mockReturnValue('light');
       renderHook(() => useTheme());
       expect(document.documentElement.classList.contains('dark')).toBe(false);
+      expect(document.documentElement.classList.contains('mocha')).toBe(false);
+      expect(document.documentElement.classList.contains('latte')).toBe(true);
     });
 
     it('should handle system theme changes', () => {
@@ -127,6 +131,8 @@ describe('useTheme', () => {
       renderHook(() => useTheme());
 
       expect(document.documentElement.classList.contains('dark')).toBe(false);
+      expect(document.documentElement.classList.contains('mocha')).toBe(false);
+      expect(document.documentElement.classList.contains('latte')).toBe(true);
 
       // Simulate system change to dark
       act(() => {
@@ -135,6 +141,8 @@ describe('useTheme', () => {
       });
 
       expect(document.documentElement.classList.contains('dark')).toBe(true);
+      expect(document.documentElement.classList.contains('mocha')).toBe(true);
+      expect(document.documentElement.classList.contains('latte')).toBe(false);
     });
   });
 });

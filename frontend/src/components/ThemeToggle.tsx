@@ -18,7 +18,7 @@ export const ThemeToggle: React.FC = () => {
     <Menu as="div" className="relative inline-block text-left">
       <div>
         <Menu.Button
-          className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          className="p-2 rounded-lg bg-ctp-surface1 text-ctp-subtext0 hover:bg-ctp-surface2 transition-colors"
           title="切换主题"
         >
           <CurrentIcon className="w-5 h-5" />
@@ -33,7 +33,7 @@ export const ThemeToggle: React.FC = () => {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute right-0 mt-2 w-36 origin-top-right divide-y divide-gray-100 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+        <Menu.Items className="absolute right-0 mt-2 w-36 origin-top-right divide-y divide-ctp-surface1 rounded-md bg-ctp-surface0 shadow-lg ring-1 ring-ctp-overlay0/50 focus:outline-hidden z-50">
           <div className="px-1 py-1">
             {themes.map((t) => (
               <Menu.Item key={t.id}>
@@ -41,7 +41,7 @@ export const ThemeToggle: React.FC = () => {
                   <button
                     onClick={() => setTheme(t.id)}
                     className={`${
-                      active ? 'bg-primary-500 text-white' : 'text-gray-900 dark:text-gray-200'
+                      active ? 'bg-ctp-mauve text-ctp-base' : 'text-ctp-text'
                     } group flex w-full items-center justify-between rounded-md px-2 py-2 text-sm transition-colors`}
                   >
                     <div className="flex items-center gap-2">

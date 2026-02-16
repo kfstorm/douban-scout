@@ -91,13 +91,13 @@ export const MovieGrid: React.FC = () => {
         {Array.from({ length: 20 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden animate-pulse"
+            className="bg-ctp-surface0 rounded-lg shadow-md overflow-hidden animate-pulse"
           >
-            <div className="aspect-[2/3] bg-gray-300 dark:bg-gray-700" />
+            <div className="aspect-2/3 bg-ctp-overlay0" />
             <div className="p-4 space-y-3">
-              <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4" />
-              <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-1/2" />
-              <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-1/4" />
+              <div className="h-4 bg-ctp-overlay0 rounded-sm w-3/4" />
+              <div className="h-3 bg-ctp-overlay0 rounded-sm w-1/2" />
+              <div className="h-3 bg-ctp-overlay0 rounded-sm w-1/4" />
             </div>
           </div>
         ))}
@@ -108,10 +108,10 @@ export const MovieGrid: React.FC = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 dark:text-red-400">加载失败，请稍后重试</p>
+        <p className="text-ctp-red">加载失败，请稍后重试</p>
         <button
           onClick={() => refetch()}
-          className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+          className="mt-4 px-4 py-2 bg-ctp-mauve text-ctp-base rounded-lg hover:bg-ctp-mauve/90"
         >
           重新加载
         </button>
@@ -125,17 +125,15 @@ export const MovieGrid: React.FC = () => {
   if (movies.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 dark:text-gray-400 text-lg">没有找到符合条件的作品</p>
-        <p className="text-gray-500 dark:text-gray-500 mt-2">请尝试调整筛选条件</p>
+        <p className="text-ctp-subtext1 text-lg">没有找到符合条件的作品</p>
+        <p className="text-ctp-overlay0 mt-2">请尝试调整筛选条件</p>
       </div>
     );
   }
 
   return (
     <div>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        共找到 {total.toLocaleString()} 部作品
-      </p>
+      <p className="text-sm text-ctp-subtext0 mb-4">共找到 {total.toLocaleString()} 部作品</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {movies.map((movie: Movie) => (
@@ -146,11 +144,9 @@ export const MovieGrid: React.FC = () => {
       {/* Load more trigger */}
       <div ref={loadMoreRef} className="h-10 mt-8 flex items-center justify-center">
         {isFetchingNextPage && (
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ctp-mauve" />
         )}
-        {!hasNextPage && movies.length > 0 && (
-          <p className="text-gray-500 dark:text-gray-400">已加载全部内容</p>
-        )}
+        {!hasNextPage && movies.length > 0 && <p className="text-ctp-overlay0">已加载全部内容</p>}
       </div>
     </div>
   );

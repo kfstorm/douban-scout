@@ -94,7 +94,7 @@ describe('PosterImage', () => {
   it('should have gray background while loading', () => {
     const { container } = render(<PosterImage {...defaultProps} />);
     const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper).toHaveClass('bg-gray-200');
+    expect(wrapper).toHaveClass('bg-ctp-surface1');
   });
 
   it('should hide image with opacity-0 while loading', () => {

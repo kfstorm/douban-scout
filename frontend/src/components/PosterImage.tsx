@@ -15,7 +15,7 @@ export const PosterImage: React.FC<PosterImageProps> = ({ id, title, className =
   if (error) {
     return (
       <div
-        className={`flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 ${className}`}
+        className={`flex flex-col items-center justify-center bg-ctp-surface1 text-ctp-overlay0 ${className}`}
       >
         <PhotoIcon className="w-12 h-12 mb-2" />
         <span className="text-xs px-2 text-center">暂无海报</span>
@@ -24,10 +24,10 @@ export const PosterImage: React.FC<PosterImageProps> = ({ id, title, className =
   }
 
   return (
-    <div className={`relative overflow-hidden bg-gray-200 dark:bg-gray-700 ${className}`}>
+    <div className={`relative overflow-hidden bg-ctp-surface1 ${className}`}>
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-ctp-mauve border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       <img

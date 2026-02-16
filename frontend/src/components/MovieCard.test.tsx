@@ -131,34 +131,34 @@ describe('MovieCard', () => {
     it('should have green background for rating >= 9', () => {
       const highRatedMovie = { ...mockMovie, rating: 9.0 };
       const { container } = render(<MovieCard movie={highRatedMovie} />);
-      const ratingBadge = container.querySelector('.bg-green-500');
+      const ratingBadge = container.querySelector('.bg-ctp-green');
       expect(ratingBadge).toBeInTheDocument();
     });
 
     it('should have blue background for rating >= 8', () => {
       const { container } = render(<MovieCard movie={mockMovie} />);
-      const ratingBadge = container.querySelector('.bg-blue-500');
+      const ratingBadge = container.querySelector('.bg-ctp-blue');
       expect(ratingBadge).toBeInTheDocument();
     });
 
     it('should have yellow background for rating >= 7', () => {
       const mediumRatedMovie = { ...mockMovie, rating: 7.5 };
       const { container } = render(<MovieCard movie={mediumRatedMovie} />);
-      const ratingBadge = container.querySelector('.bg-yellow-500');
+      const ratingBadge = container.querySelector('.bg-ctp-yellow');
       expect(ratingBadge).toBeInTheDocument();
     });
 
     it('should have orange background for rating < 7', () => {
       const lowRatedMovie = { ...mockMovie, rating: 6.5 };
       const { container } = render(<MovieCard movie={lowRatedMovie} />);
-      const ratingBadge = container.querySelector('.bg-orange-500');
+      const ratingBadge = container.querySelector('.bg-ctp-peach');
       expect(ratingBadge).toBeInTheDocument();
     });
 
     it('should have gray background when rating is null', () => {
       const unratedMovie = { ...mockMovie, rating: null };
       const { container } = render(<MovieCard movie={unratedMovie} />);
-      const ratingBadge = container.querySelector('.bg-gray-400');
+      const ratingBadge = container.querySelector('.bg-ctp-overlay0');
       expect(ratingBadge).toBeInTheDocument();
     });
   });

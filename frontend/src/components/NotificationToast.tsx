@@ -16,10 +16,10 @@ const icons: Record<NotificationType, React.ElementType> = {
 };
 
 const colors: Record<NotificationType, string> = {
-  success: 'text-green-500 bg-green-50 dark:bg-green-900/20',
-  error: 'text-red-500 bg-red-50 dark:bg-red-900/20',
-  info: 'text-blue-500 bg-blue-50 dark:bg-blue-900/20',
-  warning: 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20',
+  success: 'text-ctp-green bg-ctp-green/10',
+  error: 'text-ctp-red bg-ctp-red/10',
+  info: 'text-ctp-blue bg-ctp-blue/10',
+  warning: 'text-ctp-yellow bg-ctp-yellow/10',
 };
 
 export const NotificationToast: React.FC = () => {
@@ -34,18 +34,18 @@ export const NotificationToast: React.FC = () => {
         return (
           <div
             key={n.id}
-            className={`flex items-start p-4 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 animate-slide-in`}
+            className={`flex items-start p-4 rounded-lg shadow-lg border border-ctp-surface1 bg-ctp-surface0 animate-slide-in`}
           >
-            <div className={`flex-shrink-0 p-1 rounded-md ${colors[n.type]}`}>
+            <div className={`shrink-0 p-1 rounded-md ${colors[n.type]}`}>
               <Icon className="w-5 h-5" />
             </div>
             <div className="ml-3 flex-1 pt-0.5">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">{n.message}</p>
+              <p className="text-sm font-medium text-ctp-text">{n.message}</p>
             </div>
-            <div className="ml-4 flex-shrink-0 flex">
+            <div className="ml-4 shrink-0 flex">
               <button
                 onClick={() => removeNotification(n.id)}
-                className="inline-flex text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                className="inline-flex text-ctp-overlay0 hover:text-ctp-subtext0"
                 aria-label="关闭通知"
               >
                 <XMarkIcon className="w-5 h-5" />
