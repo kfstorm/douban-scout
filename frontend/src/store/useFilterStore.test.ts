@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useFilterStore } from './useFilterStore';
+import { useFilterStore, defaultFilters } from './useFilterStore';
 
 describe('useFilterStore', () => {
   beforeEach(() => {
@@ -260,18 +260,29 @@ describe('useFilterStore', () => {
       useFilterStore.getState().resetFilters();
 
       const state = useFilterStore.getState();
-      expect(state.type).toBeNull();
-      expect(state.minRating).toBe(0);
-      expect(state.maxRating).toBe(10);
-      expect(state.minRatingCount).toBe(0);
-      expect(state.minYear).toBeNull();
-      expect(state.maxYear).toBeNull();
-      expect(state.selectedGenres).toEqual([]);
-      expect(state.excludedGenres).toEqual([]);
-      expect(state.selectedRegions).toEqual([]);
-      expect(state.searchQuery).toBe('');
-      expect(state.sortBy).toBe('rating_count');
-      expect(state.sortOrder).toBe('desc');
+      expect(state.type).toBe(defaultFilters.type);
+      expect(state.minRating).toBe(defaultFilters.minRating);
+      expect(state.maxRating).toBe(defaultFilters.maxRating);
+      expect(state.minRatingCount).toBe(defaultFilters.minRatingCount);
+      expect(state.minYear).toBe(defaultFilters.minYear);
+      expect(state.maxYear).toBe(defaultFilters.maxYear);
+      expect(state.selectedGenres).toEqual(defaultFilters.selectedGenres);
+      expect(state.excludedGenres).toEqual(defaultFilters.excludedGenres);
+      expect(state.selectedRegions).toEqual(defaultFilters.selectedRegions);
+      expect(state.searchQuery).toBe(defaultFilters.searchQuery);
+      expect(state.sortBy).toBe(defaultFilters.sortBy);
+      expect(state.sortOrder).toBe(defaultFilters.sortOrder);
+    });
+
+    it('should reset committedFilters immediately without debounce', () => {
+      useFilterStore.getState().setType('movie');
+      useFilterStore.getState().setMinRating(8);
+
+      useFilterStore.getState().resetFilters();
+
+      const state = useFilterStore.getState();
+      expect(state.committedFilters.type).toBe(defaultFilters.type);
+      expect(state.committedFilters.minRating).toBe(defaultFilters.minRating);
     });
   });
 });

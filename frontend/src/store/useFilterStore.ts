@@ -49,10 +49,7 @@ export interface FilterStore extends FilterState {
 
 const DEBOUNCE_DELAY = 1000; // ms
 
-// Parse URL params synchronously during store initialization
-const urlFilters = parseUrlParams();
-
-const initialState: FilterState = {
+export const defaultFilters: FilterState = {
   type: null,
   minRating: 0,
   maxRating: 10,
@@ -65,6 +62,13 @@ const initialState: FilterState = {
   searchQuery: '',
   sortBy: 'rating_count',
   sortOrder: 'desc',
+};
+
+// Parse URL params synchronously during store initialization
+const urlFilters = parseUrlParams();
+
+const initialState: FilterState = {
+  ...defaultFilters,
   ...urlFilters, // Apply URL params to initial state
 };
 
@@ -229,8 +233,10 @@ export const useFilterStore = create<FilterStore>()((set, get) => {
     },
 
     resetFilters: () => {
-      set(initialState);
-      commitFilters();
+      set({
+        ...defaultFilters,
+        committedFilters: defaultFilters,
+      });
     },
 
     setCommittedFilters: (filters: Partial<FilterState>) => {
