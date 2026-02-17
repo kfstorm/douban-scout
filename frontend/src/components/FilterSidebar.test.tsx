@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FilterSidebar } from './FilterSidebar';
 import { useFilterStore } from '../store/useFilterStore';
@@ -61,5 +61,47 @@ describe('FilterSidebar - Year Range', () => {
 
     toggle.click();
     expect(useFilterStore.getState().maxYear).toBeNull();
+  });
+});
+
+describe('FilterSidebar - Rating Range', () => {
+  beforeEach(() => {
+    useFilterStore.setState(useFilterStore.getInitialState());
+  });
+
+  it('should allow setting min rating to 0', () => {
+    renderWithProviders(<FilterSidebar isOpen={true} onClose={vi.fn()} />);
+
+    const minRatingInput = document.getElementById('min-rating') as HTMLInputElement;
+    fireEvent.change(minRatingInput, { target: { value: '0' } });
+
+    expect(useFilterStore.getState().minRating).toBe(0);
+  });
+
+  it('should allow setting max rating to 0', () => {
+    renderWithProviders(<FilterSidebar isOpen={true} onClose={vi.fn()} />);
+
+    const maxRatingInput = document.getElementById('max-rating') as HTMLInputElement;
+    fireEvent.change(maxRatingInput, { target: { value: '0' } });
+
+    expect(useFilterStore.getState().maxRating).toBe(0);
+  });
+
+  it('should allow setting max rating to 0.1', () => {
+    renderWithProviders(<FilterSidebar isOpen={true} onClose={vi.fn()} />);
+
+    const maxRatingInput = document.getElementById('max-rating') as HTMLInputElement;
+    fireEvent.change(maxRatingInput, { target: { value: '0.1' } });
+
+    expect(useFilterStore.getState().maxRating).toBe(0.1);
+  });
+
+  it('should allow setting min rating to 0.1', () => {
+    renderWithProviders(<FilterSidebar isOpen={true} onClose={vi.fn()} />);
+
+    const minRatingInput = document.getElementById('min-rating') as HTMLInputElement;
+    fireEvent.change(minRatingInput, { target: { value: '0.1' } });
+
+    expect(useFilterStore.getState().minRating).toBe(0.1);
   });
 });
