@@ -15,7 +15,7 @@ if ! command -v pre-commit >/dev/null 2>&1; then
     exit 1
 fi
 
-pre-commit install
+pre-commit install --install-hooks
 
 echo ""
 echo "=== Git pre-commit hooks installed successfully! ==="
