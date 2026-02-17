@@ -8,6 +8,8 @@ describe('useUrlSync', () => {
   let mockLocation: Location;
 
   beforeEach(() => {
+    vi.useFakeTimers();
+
     useFilterStore.setState({
       type: null,
       minRating: 0,
@@ -21,6 +23,20 @@ describe('useUrlSync', () => {
       searchQuery: '',
       sortBy: 'rating_count',
       sortOrder: 'desc',
+      committedFilters: {
+        type: null,
+        minRating: 0,
+        maxRating: 10,
+        minRatingCount: 0,
+        minYear: null,
+        maxYear: null,
+        selectedGenres: [],
+        excludedGenres: [],
+        selectedRegions: [],
+        searchQuery: '',
+        sortBy: 'rating_count',
+        sortOrder: 'desc',
+      },
     });
 
     mockLocation = {
@@ -40,6 +56,7 @@ describe('useUrlSync', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     Object.defineProperty(window, 'location', {
       writable: true,
       value: originalLocation,
@@ -135,7 +152,9 @@ describe('useUrlSync', () => {
 
     const state = useFilterStore.getState();
     const stateKeys = Object.keys(state).filter(
-      (key) => typeof (state as unknown as Record<string, unknown>)[key] !== 'function',
+      (key) =>
+        typeof (state as unknown as Record<string, unknown>)[key] !== 'function' &&
+        key !== 'committedFilters', // Internal state, not synced to URL
     );
 
     stateKeys.forEach((storeKey) => {
@@ -160,7 +179,7 @@ describe('useUrlSync', () => {
         ).toEqual(value);
       });
 
-      it(`should sync ${storeKey} from Store to URL (param: ${param})`, () => {
+      it(`should sync ${storeKey} from Store to URL (param: ${param})`, async () => {
         renderHook(() => useUrlSync());
 
         const currentState = useFilterStore.getState() as unknown as Record<string, unknown>;
@@ -180,6 +199,11 @@ describe('useUrlSync', () => {
 
         act(() => {
           (action as (v: unknown) => void)(value);
+        });
+
+        // Wait for debounce (1000ms) and React to re-render
+        act(() => {
+          vi.advanceTimersByTime(1100);
         });
 
         const urlValue = Array.isArray(value) ? value.join(',') : String(value);

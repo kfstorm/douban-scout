@@ -13,6 +13,11 @@ export interface FilterState {
   searchQuery: string;
   sortBy: 'rating' | 'rating_count' | 'year';
   sortOrder: 'asc' | 'desc';
+}
+
+export interface FilterStore extends FilterState {
+  // Committed filters (debounced, triggers API calls)
+  committedFilters: FilterState;
 
   // Actions
   setType: (type: 'movie' | 'tv' | null) => void;
@@ -35,102 +40,218 @@ export interface FilterState {
   setSortBy: (sortBy: 'rating' | 'rating_count' | 'year') => void;
   setSortOrder: (order: 'asc' | 'desc') => void;
   resetFilters: () => void;
+  // Batch update committed filters (for initial load)
+  setCommittedFilters: (filters: Partial<FilterState>) => void;
+  // Get all filters as an object
+  getFilters: () => FilterState;
 }
 
-const initialState = {
-  type: null as 'movie' | 'tv' | null,
+const DEBOUNCE_DELAY = 1000; // ms
+
+const initialState: FilterState = {
+  type: null,
   minRating: 0,
   maxRating: 10,
   minRatingCount: 0,
-  minYear: null as number | null,
-  maxYear: null as number | null,
-  selectedGenres: [] as string[],
-  excludedGenres: [] as string[],
-  selectedRegions: [] as string[],
+  minYear: null,
+  maxYear: null,
+  selectedGenres: [],
+  excludedGenres: [],
+  selectedRegions: [],
   searchQuery: '',
-  sortBy: 'rating_count' as const,
-  sortOrder: 'desc' as const,
+  sortBy: 'rating_count',
+  sortOrder: 'desc',
 };
 
-export const useFilterStore = create<FilterState>()((set) => ({
-  ...initialState,
+// Debounce helper
+const debounce = <T extends (...args: unknown[]) => void>(fn: T, delay: number) => {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  };
+};
 
-  setType: (type) => set({ type }),
+export const useFilterStore = create<FilterStore>()((set, get) => {
+  // Debounced commit function
+  const commitFilters = debounce(() => {
+    const state = get();
+    set({
+      committedFilters: {
+        type: state.type,
+        minRating: state.minRating,
+        maxRating: state.maxRating,
+        minRatingCount: state.minRatingCount,
+        minYear: state.minYear,
+        maxYear: state.maxYear,
+        selectedGenres: state.selectedGenres,
+        excludedGenres: state.excludedGenres,
+        selectedRegions: state.selectedRegions,
+        searchQuery: state.searchQuery,
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
+      },
+    });
+  }, DEBOUNCE_DELAY);
 
-  setMinRating: (minRating) => set({ minRating }),
+  return {
+    ...initialState,
+    committedFilters: initialState,
 
-  setMaxRating: (maxRating) => set({ maxRating }),
+    setType: (type: 'movie' | 'tv' | null) => {
+      set({ type });
+      commitFilters();
+    },
 
-  setMinRatingCount: (minRatingCount) => set({ minRatingCount }),
+    setMinRating: (minRating: number) => {
+      set({ minRating });
+      commitFilters();
+    },
 
-  setMinYear: (minYear) => set({ minYear }),
+    setMaxRating: (maxRating: number) => {
+      set({ maxRating });
+      commitFilters();
+    },
 
-  setMaxYear: (maxYear) => set({ maxYear }),
+    setMinRatingCount: (minRatingCount: number) => {
+      set({ minRatingCount });
+      commitFilters();
+    },
 
-  toggleGenre: (genre) =>
-    set((state) => ({
-      selectedGenres: state.selectedGenres.includes(genre)
-        ? state.selectedGenres.filter((g) => g !== genre)
-        : [...state.selectedGenres, genre],
-      // If a genre is selected, it cannot be excluded
-      excludedGenres: state.excludedGenres.filter((g) => g !== genre),
-    })),
+    setMinYear: (minYear: number | null) => {
+      set({ minYear });
+      commitFilters();
+    },
 
-  setSelectedGenres: (selectedGenres) => set({ selectedGenres }),
+    setMaxYear: (maxYear: number | null) => {
+      set({ maxYear });
+      commitFilters();
+    },
 
-  clearGenres: () => set({ selectedGenres: [] }),
+    toggleGenre: (genre: string) => {
+      set((state) => ({
+        selectedGenres: state.selectedGenres.includes(genre)
+          ? state.selectedGenres.filter((g) => g !== genre)
+          : [...state.selectedGenres, genre],
+        excludedGenres: state.excludedGenres.filter((g) => g !== genre),
+      }));
+      commitFilters();
+    },
 
-  toggleExcludedGenre: (genre) =>
-    set((state) => ({
-      excludedGenres: state.excludedGenres.includes(genre)
-        ? state.excludedGenres.filter((g) => g !== genre)
-        : [...state.excludedGenres, genre],
-      // If a genre is excluded, it cannot be selected (inclusive)
-      selectedGenres: state.selectedGenres.filter((g) => g !== genre),
-    })),
+    setSelectedGenres: (selectedGenres: string[]) => {
+      set({ selectedGenres });
+      commitFilters();
+    },
 
-  setExcludedGenres: (excludedGenres) => set({ excludedGenres }),
+    clearGenres: () => {
+      set({ selectedGenres: [] });
+      commitFilters();
+    },
 
-  clearExcludedGenres: () => set({ excludedGenres: [] }),
+    toggleExcludedGenre: (genre: string) => {
+      set((state) => ({
+        excludedGenres: state.excludedGenres.includes(genre)
+          ? state.excludedGenres.filter((g) => g !== genre)
+          : [...state.excludedGenres, genre],
+        selectedGenres: state.selectedGenres.filter((g) => g !== genre),
+      }));
+      commitFilters();
+    },
 
-  cycleGenre: (genre) =>
-    set((state) => {
-      if (state.selectedGenres.includes(genre)) {
-        // Included -> Excluded
-        return {
-          selectedGenres: state.selectedGenres.filter((g) => g !== genre),
-          excludedGenres: [...state.excludedGenres, genre],
-        };
-      } else if (state.excludedGenres.includes(genre)) {
-        // Excluded -> Unselected
-        return {
-          excludedGenres: state.excludedGenres.filter((g) => g !== genre),
-        };
-      } else {
-        // Unselected -> Included
-        return {
-          selectedGenres: [...state.selectedGenres, genre],
-          excludedGenres: state.excludedGenres.filter((g) => g !== genre),
-        };
-      }
-    }),
+    setExcludedGenres: (excludedGenres: string[]) => {
+      set({ excludedGenres });
+      commitFilters();
+    },
 
-  toggleRegion: (region) =>
-    set((state) => ({
-      selectedRegions: state.selectedRegions.includes(region)
-        ? state.selectedRegions.filter((r) => r !== region)
-        : [...state.selectedRegions, region],
-    })),
+    clearExcludedGenres: () => {
+      set({ excludedGenres: [] });
+      commitFilters();
+    },
 
-  setSelectedRegions: (selectedRegions) => set({ selectedRegions }),
+    cycleGenre: (genre: string) => {
+      set((state) => {
+        if (state.selectedGenres.includes(genre)) {
+          return {
+            selectedGenres: state.selectedGenres.filter((g) => g !== genre),
+            excludedGenres: [...state.excludedGenres, genre],
+          };
+        } else if (state.excludedGenres.includes(genre)) {
+          return {
+            excludedGenres: state.excludedGenres.filter((g) => g !== genre),
+          };
+        } else {
+          return {
+            selectedGenres: [...state.selectedGenres, genre],
+            excludedGenres: state.excludedGenres.filter((g) => g !== genre),
+          };
+        }
+      });
+      commitFilters();
+    },
 
-  clearRegions: () => set({ selectedRegions: [] }),
+    toggleRegion: (region: string) => {
+      set((state) => ({
+        selectedRegions: state.selectedRegions.includes(region)
+          ? state.selectedRegions.filter((r) => r !== region)
+          : [...state.selectedRegions, region],
+      }));
+      commitFilters();
+    },
 
-  setSearchQuery: (searchQuery) => set({ searchQuery }),
+    setSelectedRegions: (selectedRegions: string[]) => {
+      set({ selectedRegions });
+      commitFilters();
+    },
 
-  setSortBy: (sortBy) => set({ sortBy }),
+    clearRegions: () => {
+      set({ selectedRegions: [] });
+      commitFilters();
+    },
 
-  setSortOrder: (sortOrder) => set({ sortOrder }),
+    setSearchQuery: (searchQuery: string) => {
+      set({ searchQuery });
+      commitFilters();
+    },
 
-  resetFilters: () => set(initialState),
-}));
+    setSortBy: (sortBy: 'rating' | 'rating_count' | 'year') => {
+      set({ sortBy });
+      commitFilters();
+    },
+
+    setSortOrder: (sortOrder: 'asc' | 'desc') => {
+      set({ sortOrder });
+      commitFilters();
+    },
+
+    resetFilters: () => {
+      set(initialState);
+      commitFilters();
+    },
+
+    setCommittedFilters: (filters: Partial<FilterState>) => {
+      const newState = { ...initialState, ...filters };
+      set({
+        ...newState,
+        committedFilters: newState,
+      });
+    },
+
+    getFilters: () => {
+      const state = get();
+      return {
+        type: state.type,
+        minRating: state.minRating,
+        maxRating: state.maxRating,
+        minRatingCount: state.minRatingCount,
+        minYear: state.minYear,
+        maxYear: state.maxYear,
+        selectedGenres: state.selectedGenres,
+        excludedGenres: state.excludedGenres,
+        selectedRegions: state.selectedRegions,
+        searchQuery: state.searchQuery,
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
+      };
+    },
+  };
+});

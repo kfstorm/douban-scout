@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { MovieCard } from './MovieCard';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -7,6 +7,7 @@ import { useFilterStore } from '../store/useFilterStore';
 import type { Movie } from '../types/movie';
 
 export const MovieGrid: React.FC = () => {
+  const { committedFilters } = useFilterStore();
   const {
     type,
     minRating,
@@ -20,7 +21,7 @@ export const MovieGrid: React.FC = () => {
     searchQuery,
     sortBy,
     sortOrder,
-  } = useFilterStore();
+  } = committedFilters;
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error, refetch } =
     useInfiniteQuery({
@@ -65,25 +66,6 @@ export const MovieGrid: React.FC = () => {
     hasMore: !!hasNextPage,
     isLoading: isFetchingNextPage,
   });
-
-  // Refetch when filters change
-  useEffect(() => {
-    refetch();
-  }, [
-    type,
-    minRating,
-    maxRating,
-    minRatingCount,
-    minYear,
-    maxYear,
-    selectedGenres,
-    excludedGenres,
-    selectedRegions,
-    searchQuery,
-    sortBy,
-    sortOrder,
-    refetch,
-  ]);
 
   if (isLoading) {
     return (

@@ -1,86 +1,51 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useFilterStore } from '../store/useFilterStore';
+import { useFilterStore, type FilterState } from '../store/useFilterStore';
 
 export function useUrlSync() {
-  const {
-    type,
-    minRating,
-    maxRating,
-    minRatingCount,
-    minYear,
-    maxYear,
-    selectedGenres,
-    excludedGenres,
-    selectedRegions,
-    searchQuery,
-    sortBy,
-    sortOrder,
-    setType,
-    setMinRating,
-    setMaxRating,
-    setMinRatingCount,
-    setMinYear,
-    setMaxYear,
-    setSearchQuery,
-    setSortBy,
-    setSortOrder,
-    setSelectedGenres,
-    setExcludedGenres,
-    setSelectedRegions,
-  } = useFilterStore();
+  const { committedFilters, setCommittedFilters } = useFilterStore();
 
   const isInitialLoad = useRef(true);
 
   // Function to sync URL params to store
   const syncUrlToStore = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.toString() === '') return; // Don't override if URL is empty (keep localStorage)
+    if (params.toString() === '') return; // Don't override if URL is empty
+
+    const filters: Partial<FilterState> = {};
 
     if (params.has('type')) {
       const val = params.get('type');
-      setType(val === 'movie' || val === 'tv' ? val : null);
+      filters.type = val === 'movie' || val === 'tv' ? val : null;
     }
-    if (params.has('minRating')) setMinRating(Number(params.get('minRating')));
-    if (params.has('maxRating')) setMaxRating(Number(params.get('maxRating')));
-    if (params.has('minRatingCount')) setMinRatingCount(Number(params.get('minRatingCount')));
-    if (params.has('minYear')) setMinYear(Number(params.get('minYear')));
-    if (params.has('maxYear')) setMaxYear(Number(params.get('maxYear')));
-    if (params.has('searchQuery')) setSearchQuery(params.get('searchQuery') || '');
+    if (params.has('minRating')) filters.minRating = Number(params.get('minRating'));
+    if (params.has('maxRating')) filters.maxRating = Number(params.get('maxRating'));
+    if (params.has('minRatingCount')) filters.minRatingCount = Number(params.get('minRatingCount'));
+    if (params.has('minYear')) filters.minYear = Number(params.get('minYear'));
+    if (params.has('maxYear')) filters.maxYear = Number(params.get('maxYear'));
+    if (params.has('searchQuery')) filters.searchQuery = params.get('searchQuery') || '';
     if (params.has('sortBy')) {
       const val = params.get('sortBy');
-      if (val === 'rating' || val === 'rating_count' || val === 'year') setSortBy(val);
+      if (val === 'rating' || val === 'rating_count' || val === 'year') filters.sortBy = val;
     }
     if (params.has('sortOrder')) {
       const val = params.get('sortOrder');
-      if (val === 'asc' || val === 'desc') setSortOrder(val);
+      if (val === 'asc' || val === 'desc') filters.sortOrder = val;
     }
-
     if (params.has('selectedGenres')) {
-      const selected = params.get('selectedGenres')?.split(',').filter(Boolean) || [];
-      setSelectedGenres(selected);
+      filters.selectedGenres = params.get('selectedGenres')?.split(',').filter(Boolean) || [];
     }
     if (params.has('excludedGenres')) {
-      const excluded = params.get('excludedGenres')?.split(',').filter(Boolean) || [];
-      setExcludedGenres(excluded);
+      filters.excludedGenres = params.get('excludedGenres')?.split(',').filter(Boolean) || [];
     }
     if (params.has('selectedRegions')) {
-      const selected = params.get('selectedRegions')?.split(',').filter(Boolean) || [];
-      setSelectedRegions(selected);
+      filters.selectedRegions = params.get('selectedRegions')?.split(',').filter(Boolean) || [];
     }
-  }, [
-    setType,
-    setMinRating,
-    setMaxRating,
-    setMinRatingCount,
-    setSearchQuery,
-    setSortBy,
-    setSortOrder,
-    setSelectedGenres,
-    setExcludedGenres,
-    setSelectedRegions,
-    setMinYear,
-    setMaxYear,
-  ]);
+
+    // Use setCommittedFilters to batch update and avoid intermediate API calls
+    if (Object.keys(filters).length > 0) {
+      setCommittedFilters(filters);
+    }
+  }, [setCommittedFilters]);
 
   // Initial load
   useEffect(() => {
@@ -97,9 +62,24 @@ export function useUrlSync() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [syncUrlToStore]);
 
-  // Store -> URL
+  // Store -> URL (sync only committedFilters to avoid URL jitter)
   useEffect(() => {
     if (isInitialLoad.current) return;
+
+    const {
+      type,
+      minRating,
+      maxRating,
+      minRatingCount,
+      minYear,
+      maxYear,
+      selectedGenres,
+      excludedGenres,
+      selectedRegions,
+      searchQuery,
+      sortBy,
+      sortOrder,
+    } = committedFilters;
 
     const params = new URLSearchParams();
     if (type) params.set('type', type);
@@ -122,18 +102,5 @@ export function useUrlSync() {
       const newUrl = `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`;
       window.history.replaceState(null, '', newUrl);
     }
-  }, [
-    type,
-    minRating,
-    maxRating,
-    minRatingCount,
-    minYear,
-    maxYear,
-    selectedGenres,
-    excludedGenres,
-    selectedRegions,
-    searchQuery,
-    sortBy,
-    sortOrder,
-  ]);
+  }, [committedFilters]);
 }
