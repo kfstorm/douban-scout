@@ -9,7 +9,8 @@
 #   3. Start: docker compose up -d
 #
 # Data Import:
-#   Mount your backup file to /import directory and use the API:
+#   Mount your backup file (from https://github.com/kfstorm/douban-idatabase)
+#   to /import directory and use the API:
 #   curl -X POST http://localhost:3000/api/import \
 #     -H "Content-Type: application/json" \
 #     -H "X-API-Key: your-api-key" \

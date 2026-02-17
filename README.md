@@ -74,7 +74,7 @@ docker compose up -d
 
 ## 数据导入
 
-本应用支持在运行时从豆瓣备份 SQLite 文件导入数据。
+本应用支持在运行时从 [douban-idatabase](https://github.com/kfstorm/douban-idatabase) 项目的备份 SQLite 文件导入数据。
 
 ### 本地开发环境
 
