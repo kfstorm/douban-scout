@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 import { MovieGrid } from './components/MovieGrid';
 import { FilterSidebar } from './components/FilterSidebar';
@@ -11,23 +11,9 @@ import './App.css';
 
 function App() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const { theme, setTheme, isDark } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { resetFilters } = useFilterStore();
   useUrlSync();
-
-  useEffect(() => {
-    const iconHref = isDark ? '/logo-dark.svg' : '/logo-light.svg';
-    let favicon = document.querySelector<HTMLLinkElement>("link[rel='icon']");
-
-    if (!favicon) {
-      favicon = document.createElement('link');
-      favicon.rel = 'icon';
-      favicon.type = 'image/svg+xml';
-      document.head.appendChild(favicon);
-    }
-
-    favicon.href = iconHref;
-  }, [isDark]);
 
   return (
     <div className="min-h-screen bg-ctp-base transition-colors">
@@ -38,7 +24,10 @@ function App() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <img src={isDark ? '/logo-dark.svg' : '/logo-light.svg'} alt="" className="w-8 h-8" />
+              <picture>
+                <source srcSet="/logo.webp" type="image/webp" />
+                <img src="/logo.png" alt="" className="w-8 h-8" />
+              </picture>
               <h1 className="text-xl font-bold text-ctp-text">瓣影寻踪</h1>
             </div>
 

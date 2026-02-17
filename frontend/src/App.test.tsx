@@ -32,50 +32,38 @@ vi.mock('./hooks/useUrlSync', () => ({
   useUrlSync: vi.fn(),
 }));
 
-describe('App branding by theme', () => {
+describe('App branding', () => {
   beforeEach(() => {
     useThemeMock.mockReset();
-    document.querySelectorAll("link[rel='icon']").forEach((link) => link.remove());
   });
 
-  it('uses light logo and favicon in light mode', () => {
+  it('renders logo with webp source and png fallback', () => {
     useThemeMock.mockReturnValue({ theme: 'light', setTheme: vi.fn(), isDark: false });
     const { container } = render(<App />);
 
-    const logo = container.querySelector('img');
-    expect(logo).toHaveAttribute('src', '/logo-light.svg');
+    const picture = container.querySelector('picture');
+    expect(picture).toBeInTheDocument();
 
-    const favicon = document.querySelector("link[rel='icon']");
-    expect(favicon).toBeInTheDocument();
-    expect(favicon).toHaveAttribute('href', '/logo-light.svg');
+    const source = picture?.querySelector('source');
+    expect(source).toHaveAttribute('srcset', '/logo.webp');
+    expect(source).toHaveAttribute('type', 'image/webp');
+
+    const img = picture?.querySelector('img');
+    expect(img).toHaveAttribute('src', '/logo.png');
   });
 
-  it('uses dark logo and favicon in dark mode', () => {
-    useThemeMock.mockReturnValue({ theme: 'dark', setTheme: vi.fn(), isDark: true });
-    const { container } = render(<App />);
-
-    const logo = container.querySelector('img');
-    expect(logo).toHaveAttribute('src', '/logo-dark.svg');
-
-    const favicon = document.querySelector("link[rel='icon']");
-    expect(favicon).toBeInTheDocument();
-    expect(favicon).toHaveAttribute('href', '/logo-dark.svg');
-  });
-
-  it('updates logo and favicon when theme changes', () => {
-    const themeState = { theme: 'light', setTheme: vi.fn(), isDark: false };
-    useThemeMock.mockImplementation(() => themeState);
-
+  it('uses same logo regardless of theme', () => {
+    useThemeMock.mockReturnValue({ theme: 'light', setTheme: vi.fn(), isDark: false });
     const { container, rerender } = render(<App />);
 
-    expect(container.querySelector('img')).toHaveAttribute('src', '/logo-light.svg');
-    expect(document.querySelector("link[rel='icon']")).toHaveAttribute('href', '/logo-light.svg');
+    const imgLight = container.querySelector('picture img');
+    expect(imgLight).toHaveAttribute('src', '/logo.png');
 
-    themeState.theme = 'dark';
-    themeState.isDark = true;
+    // Switch to dark theme
+    useThemeMock.mockReturnValue({ theme: 'dark', setTheme: vi.fn(), isDark: true });
     rerender(<App />);
 
-    expect(container.querySelector('img')).toHaveAttribute('src', '/logo-dark.svg');
-    expect(document.querySelector("link[rel='icon']")).toHaveAttribute('href', '/logo-dark.svg');
+    const imgDark = container.querySelector('picture img');
+    expect(imgDark).toHaveAttribute('src', '/logo.png');
   });
 });
