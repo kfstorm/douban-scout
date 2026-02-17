@@ -96,11 +96,33 @@ export function MovieCard({ movie, onClick }: MovieCardProps) {
 - Responsive design with `sm:`, `md:`, `lg:` prefixes
 
 ```tsx
-<div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-  <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg">
+<div className="min-h-screen bg-ctp-base transition-colors">
+  <button className="px-4 py-2 bg-ctp-mauve hover:bg-ctp-mauve/90 text-ctp-base rounded-lg">
     Click me
   </button>
 </div>
+```
+
+### Catppuccin Theme
+
+We use the [Catppuccin](https://github.com/catppuccin) color palette (Latte for light mode, Mocha for dark mode). All colors are prefixed with `ctp-`:
+
+- **Primary accent**: `ctp-mauve` - used for buttons, focus rings, active states, hover effects
+- **Secondary accent**: `ctp-blue` - used for informational elements, links
+- **Success**: `ctp-green` - used for positive states, high ratings
+- **Warning**: `ctp-yellow` - used for warnings
+- **Error**: `ctp-red` - used for errors
+- **Backgrounds**: `ctp-base` (page), `ctp-surface0`, `ctp-surface1` (elevated surfaces)
+- **Text**: `ctp-text` (primary), `ctp-subtext0`, `ctp-subtext1` (secondary)
+
+Example usage:
+
+```tsx
+<button className="bg-ctp-mauve text-ctp-base hover:bg-ctp-mauve/90">
+  Primary Button
+</button>
+<input className="focus:ring-2 focus:ring-ctp-mauve" />
+<a className="text-ctp-subtext0 hover:text-ctp-mauve">Interactive Link</a>
 ```
 
 ## Testing

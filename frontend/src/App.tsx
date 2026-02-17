@@ -4,6 +4,7 @@ import { MovieGrid } from './components/MovieGrid';
 import { FilterSidebar } from './components/FilterSidebar';
 import { ThemeToggle } from './components/ThemeToggle';
 import { NotificationToast } from './components/NotificationToast';
+import { GitHubIcon } from './components/GitHubIcon';
 import { useTheme } from './hooks/useTheme';
 import { useFilterStore } from './store/useFilterStore';
 import { useUrlSync } from './hooks/useUrlSync';
@@ -46,6 +47,16 @@ function App() {
               >
                 重置筛选
               </button>
+              <a
+                href="https://github.com/kfstorm/douban-scout"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 text-ctp-subtext0 hover:text-ctp-mauve hover:bg-ctp-surface1 rounded-lg transition-colors"
+                aria-label="在 GitHub 上查看"
+                title="在 GitHub 上查看"
+              >
+                <GitHubIcon />
+              </a>
               <ThemeToggle theme={theme} setTheme={setTheme} />
             </div>
           </div>
