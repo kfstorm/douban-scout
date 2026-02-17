@@ -183,29 +183,73 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
       <div>
         <h3 className="text-sm font-medium text-ctp-text mb-3">年份范围</h3>
         <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <label htmlFor="min-year" className="text-xs text-ctp-subtext0">
-              起始
-            </label>
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-ctp-subtext0">起始</span>
+              <label
+                htmlFor="min-year-toggle"
+                className="relative inline-flex items-center cursor-pointer"
+                aria-label="启用起始年份"
+              >
+                <input
+                  id="min-year-toggle"
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={minYear !== null}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setMinYear(new Date().getFullYear());
+                    } else {
+                      setMinYear(null);
+                    }
+                  }}
+                />
+                <div className="w-9 h-5 bg-ctp-surface1 rounded-full peer peer-checked:bg-ctp-mauve peer-focus:ring-2 peer-focus:ring-ctp-mauve/50 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform peer-checked:after:translate-x-4"></div>
+              </label>
+            </div>
             <input
-              id="min-year"
+              id="min-year-input"
               type="number"
-              value={minYear || ''}
+              placeholder={minYear === null ? '未启用' : ''}
+              value={minYear ?? ''}
+              disabled={minYear === null}
               onChange={(e) => setMinYear(parseInt(e.target.value) || null)}
-              className="w-full mt-1 px-3 py-2 border border-ctp-surface1 rounded-lg bg-ctp-surface0 text-ctp-text"
+              className="w-full px-3 py-2 border border-ctp-surface1 rounded-lg bg-ctp-surface0 text-ctp-text placeholder-ctp-overlay0 disabled:opacity-50 disabled:bg-ctp-surface1 transition-colors"
             />
           </div>
-          <span className="text-ctp-overlay0">-</span>
-          <div className="flex-1">
-            <label htmlFor="max-year" className="text-xs text-ctp-subtext0">
-              结束
-            </label>
+          <span className="text-ctp-overlay0 pt-6">-</span>
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-ctp-subtext0">结束</span>
+              <label
+                htmlFor="max-year-toggle"
+                className="relative inline-flex items-center cursor-pointer"
+                aria-label="启用结束年份"
+              >
+                <input
+                  id="max-year-toggle"
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={maxYear !== null}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setMaxYear(new Date().getFullYear());
+                    } else {
+                      setMaxYear(null);
+                    }
+                  }}
+                />
+                <div className="w-9 h-5 bg-ctp-surface1 rounded-full peer peer-checked:bg-ctp-mauve peer-focus:ring-2 peer-focus:ring-ctp-mauve/50 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform peer-checked:after:translate-x-4"></div>
+              </label>
+            </div>
             <input
-              id="max-year"
+              id="max-year-input"
               type="number"
-              value={maxYear || ''}
+              placeholder={maxYear === null ? '未启用' : ''}
+              value={maxYear ?? ''}
+              disabled={maxYear === null}
               onChange={(e) => setMaxYear(parseInt(e.target.value) || null)}
-              className="w-full mt-1 px-3 py-2 border border-ctp-surface1 rounded-lg bg-ctp-surface0 text-ctp-text"
+              className="w-full px-3 py-2 border border-ctp-surface1 rounded-lg bg-ctp-surface0 text-ctp-text placeholder-ctp-overlay0 disabled:opacity-50 disabled:bg-ctp-surface1 transition-colors"
             />
           </div>
         </div>

@@ -38,3 +38,10 @@ Object.defineProperty(window, 'localStorage', {
 Object.defineProperty(window, 'scrollTo', {
   value: vi.fn<[number, number], void>(),
 });
+
+// Mock ResizeObserver
+globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  disconnect: vi.fn(),
+  unobserve: vi.fn(),
+})) as unknown as typeof ResizeObserver;
