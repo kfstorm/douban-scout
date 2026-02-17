@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { parseUrlParams } from '../utils/urlParams';
 
 export interface FilterState {
   type: 'movie' | 'tv' | null;
@@ -48,6 +49,9 @@ export interface FilterStore extends FilterState {
 
 const DEBOUNCE_DELAY = 1000; // ms
 
+// Parse URL params synchronously during store initialization
+const urlFilters = parseUrlParams();
+
 const initialState: FilterState = {
   type: null,
   minRating: 0,
@@ -61,6 +65,7 @@ const initialState: FilterState = {
   searchQuery: '',
   sortBy: 'rating_count',
   sortOrder: 'desc',
+  ...urlFilters, // Apply URL params to initial state
 };
 
 // Debounce helper
@@ -96,7 +101,7 @@ export const useFilterStore = create<FilterStore>()((set, get) => {
 
   return {
     ...initialState,
-    committedFilters: initialState,
+    committedFilters: initialState, // Both states start with URL params applied
 
     setType: (type: 'movie' | 'tv' | null) => {
       set({ type });

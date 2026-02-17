@@ -31,6 +31,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
     selectedRegions,
     sortBy,
     sortOrder,
+    committedFilters,
     setType,
     setMinRating,
     setMaxRating,
@@ -75,17 +76,17 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ isOpen, onClose })
     return () => clearTimeout(timer);
   }, [genreSearch, isGenreComposing]);
 
-  // Fetch genres from backend
+  // Fetch genres from backend (use committedFilters to avoid initial empty requests)
   const { data: genresData, isLoading: isLoadingGenres } = useQuery({
-    queryKey: ['genres', type],
-    queryFn: () => moviesApi.getGenres(type || undefined),
+    queryKey: ['genres', committedFilters.type],
+    queryFn: () => moviesApi.getGenres(committedFilters.type || undefined),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Fetch regions from backend
+  // Fetch regions from backend (use committedFilters to avoid initial empty requests)
   const { data: regionsData, isLoading: isLoadingRegions } = useQuery({
-    queryKey: ['regions', type],
-    queryFn: () => moviesApi.getRegions(type || undefined),
+    queryKey: ['regions', committedFilters.type],
+    queryFn: () => moviesApi.getRegions(committedFilters.type || undefined),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
