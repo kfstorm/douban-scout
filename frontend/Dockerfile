@@ -10,8 +10,15 @@ COPY package*.json ./
 RUN --mount=type=cache,target=/tmp/npm-cache \
     npm ci --cache /tmp/npm-cache
 
-# Copy source code and build
-COPY . .
+# Copy only files needed for the build
+COPY index.html ./
+COPY vite.config.ts ./
+COPY tsconfig*.json ./
+COPY postcss.config.js ./
+COPY src ./src
+COPY public ./public
+
+# Build (cached unless source files change)
 RUN npm run build
 
 # Runtime stage
