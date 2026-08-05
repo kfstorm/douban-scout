@@ -1,15 +1,25 @@
 """Tests for poster caching functionality."""
 
 import asyncio
+import io
 import os
 import time
 from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
+from PIL import Image
+from PIL.features import check as pillow_features
 
 from app.main import _poster_cache_cleanup_loop, lifespan
 from app.services.poster_service import PosterCacheService
+
+
+def _make_image(width: int, height: int) -> bytes:
+    """Create a small PNG image to use as poster content."""
+    buffer = io.BytesIO()
+    Image.new("RGB", (width, height), (180, 120, 90)).save(buffer, format="PNG")
+    return buffer.getvalue()
 
 
 class TestPosterCacheService:
@@ -21,6 +31,9 @@ class TestPosterCacheService:
         with patch("app.services.poster_service.settings") as mock_settings:
             mock_settings.data_dir = str(tmp_path)
             mock_settings.poster_cache_ttl = 365
+            mock_settings.poster_encode_format = "original"
+            mock_settings.poster_encode_quality = 80
+            mock_settings.poster_max_width = 0
             service = PosterCacheService()
             yield service
 
@@ -29,6 +42,9 @@ class TestPosterCacheService:
         with patch("app.services.poster_service.settings") as mock_settings:
             mock_settings.data_dir = str(tmp_path)
             mock_settings.poster_cache_ttl = 365
+            mock_settings.poster_encode_format = "original"
+            mock_settings.poster_encode_quality = 80
+            mock_settings.poster_max_width = 0
             service = PosterCacheService()
             assert service.cache_dir.exists()
             assert service.cache_dir == tmp_path / "cache/posters"
@@ -200,7 +216,130 @@ class TestPosterCacheService:
 
         assert not temp_cache_service.is_cache_valid(cache_path)
 
-    def test_content_type_guessing(self, temp_cache_service):
+    def test_save_poster_encodes_to_webp(self, temp_cache_service):
+        """Test that saving a poster re-encodes it to the configured webp format."""
+        with patch("app.services.poster_service.settings") as mock_settings:
+            mock_settings.poster_encode_format = "webp"
+            mock_settings.poster_encode_quality = 75
+            mock_settings.poster_max_width = 0
+            cache_path = temp_cache_service.save_poster(20001, _make_image(540, 800), "image/png")
+
+        assert cache_path is not None
+        assert cache_path.suffix == ".webp"
+        with Image.open(cache_path) as image:
+            assert image.format == "WEBP"
+            assert image.size == (540, 800)
+
+    @pytest.mark.skipif(not pillow_features("avif"), reason="Pillow built without AVIF support")
+    def test_save_poster_encodes_to_avif(self, temp_cache_service):
+        """Test that saving a poster re-encodes it to the configured avif format."""
+        with patch("app.services.poster_service.settings") as mock_settings:
+            mock_settings.poster_encode_format = "avif"
+            mock_settings.poster_encode_quality = 50
+            mock_settings.poster_max_width = 0
+            cache_path = temp_cache_service.save_poster(20002, _make_image(540, 800), "image/jpeg")
+
+        assert cache_path is not None
+        assert cache_path.suffix == ".avif"
+        with Image.open(cache_path) as image:
+            assert image.format == "AVIF"
+
+    def test_save_poster_encodes_to_jpeg(self, temp_cache_service):
+        """Test that saving a poster re-encodes it to jpeg and drops alpha."""
+        with patch("app.services.poster_service.settings") as mock_settings:
+            mock_settings.poster_encode_format = "jpeg"
+            mock_settings.poster_encode_quality = 80
+            mock_settings.poster_max_width = 0
+            cache_path = temp_cache_service.save_poster(20005, _make_image(540, 800), "image/png")
+
+        assert cache_path is not None
+        assert cache_path.suffix == ".jpg"
+        with Image.open(cache_path) as image:
+            assert image.format == "JPEG"
+            assert image.mode in ("RGB", "L")
+
+    def test_save_poster_resizes_to_max_width(self, temp_cache_service):
+        """Test that saving a poster downscales to the configured max width."""
+        with patch("app.services.poster_service.settings") as mock_settings:
+            mock_settings.poster_encode_format = "webp"
+            mock_settings.poster_encode_quality = 75
+            mock_settings.poster_max_width = 400
+            cache_path = temp_cache_service.save_poster(20003, _make_image(540, 810), "image/jpeg")
+
+        assert cache_path is not None
+        with Image.open(cache_path) as image:
+            assert image.width == 400
+            assert image.height == 600
+
+    def test_save_poster_keeps_smaller_than_max_width(self, temp_cache_service):
+        """Test that saving a small poster does not upscale it."""
+        with patch("app.services.poster_service.settings") as mock_settings:
+            mock_settings.poster_encode_format = "webp"
+            mock_settings.poster_encode_quality = 75
+            mock_settings.poster_max_width = 400
+            cache_path = temp_cache_service.save_poster(20004, _make_image(200, 300), "image/jpeg")
+
+        assert cache_path is not None
+        with Image.open(cache_path) as image:
+            assert image.size == (200, 300)
+
+    def test_save_poster_original_format_keeps_bytes(self, temp_cache_service):
+        """Test that the original format stores bytes without re-encoding."""
+        content = _make_image(120, 180)
+        cache_path = temp_cache_service.save_poster(20006, content, "image/png")
+
+        assert cache_path is not None
+        assert cache_path.suffix == ".png"
+        assert cache_path.read_bytes() == content
+
+    def test_get_cached_poster_lazy_reencode_on_format_change(self, temp_cache_service):
+        """Test that a cache with an outdated format is re-encoded on read."""
+        content = _make_image(540, 800)
+        with patch("app.services.poster_service.settings") as mock_settings:
+            mock_settings.poster_encode_format = "original"
+            temp_cache_service.save_poster(20007, content, "image/png")
+
+        with patch("app.services.poster_service.settings") as mock_settings:
+            mock_settings.poster_encode_format = "webp"
+            mock_settings.poster_encode_quality = 75
+            mock_settings.poster_max_width = 0
+            result = temp_cache_service.get_cached_poster(20007)
+
+        assert result is not None
+        cache_path, content_type = result
+        assert cache_path.suffix == ".webp"
+        assert content_type == "image/webp"
+        files = list(temp_cache_service.cache_dir.glob("20007.*"))
+        assert [f.suffix for f in files] == [".webp"]
+
+    def test_save_poster_falls_back_to_original_on_encode_failure(self, temp_cache_service):
+        """Test that an unencodable poster is stored as-is with its original extension."""
+        with patch("app.services.poster_service.settings") as mock_settings:
+            mock_settings.poster_encode_format = "webp"
+            mock_settings.poster_encode_quality = 75
+            mock_settings.poster_max_width = 0
+            content = b"not a real image"
+            cache_path = temp_cache_service.save_poster(20008, content, "image/jpeg")
+
+        assert cache_path is not None
+        assert cache_path.suffix == ".jpg"
+        assert cache_path.read_bytes() == content
+
+    def test_get_cached_poster_returns_unchanged_when_format_matches(self, temp_cache_service):
+        """Test that a cache matching the target format is served without re-encoding."""
+        with patch("app.services.poster_service.settings") as mock_settings:
+            mock_settings.poster_encode_format = "webp"
+            mock_settings.poster_encode_quality = 75
+            mock_settings.poster_max_width = 0
+            temp_cache_service.save_poster(20009, _make_image(200, 300), "image/png")
+            result = temp_cache_service.get_cached_poster(20009)
+
+        assert result is not None
+        cache_path, content_type = result
+        assert cache_path.suffix == ".webp"
+        assert content_type == "image/webp"
+        files = list(temp_cache_service.cache_dir.glob("20009.*"))
+        assert [f.suffix for f in files] == [".webp"]
         """Test content type guessing from file extensions."""
         test_cases = [
             (".jpg", "image/jpeg"),
@@ -253,5 +392,8 @@ class TestPosterCacheService:
         with patch("app.services.poster_service.settings") as mock_settings:
             mock_settings.data_dir = str(tmp_path)
             mock_settings.poster_cache_ttl = 100
+            mock_settings.poster_encode_format = "original"
+            mock_settings.poster_encode_quality = 80
+            mock_settings.poster_max_width = 0
             service = PosterCacheService()
             assert service.ttl_days == 100

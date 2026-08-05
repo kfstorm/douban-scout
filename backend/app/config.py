@@ -1,5 +1,7 @@
 """Application configuration."""
 
+from typing import Literal
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -17,6 +19,30 @@ class Settings(BaseSettings):
     poster_cache_ttl: int = Field(
         default=365,
         description="本地海报图片的缓存有效期(天), 超过此天数后会尝试重新下载",
+    )
+    poster_encode_format: Literal["original", "jpeg", "webp", "avif"] = Field(
+        default="avif",
+        description=(
+            "海报图片缓存时的重编码格式; original 表示原样缓存豆瓣返回的图片, "
+            "jpeg/webp/avif 会在保存前进行缩放和重编码"
+        ),
+    )
+    poster_encode_quality: int = Field(
+        default=40,
+        ge=1,
+        le=100,
+        description=(
+            "海报图片重编码质量(1-100), 数值越低压缩率越高、画质损失越大; "
+            "仅当 POSTER_ENCODE_FORMAT 不为 original 时生效"
+        ),
+    )
+    poster_max_width: int = Field(
+        default=400,
+        ge=0,
+        description=(
+            "海报图片缩放后的最大宽度(像素), 超过该宽度会按比例缩小, "
+            "0 表示不缩放; 仅当 POSTER_ENCODE_FORMAT 不为 original 时生效"
+        ),
     )
 
     # Security

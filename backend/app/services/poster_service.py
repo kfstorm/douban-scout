@@ -1,14 +1,24 @@
 """Poster caching service for Douban Scout."""
 
+import io
 import logging
 import mimetypes
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import ClassVar
 
+from PIL import Image
+
 from app.config import settings
 
 logger = logging.getLogger("douban.posters")
+
+# Encode target -> (PIL save format, output content type)
+_ENCODE_FORMATS: dict[str, tuple[str, str]] = {
+    "webp": ("WEBP", "image/webp"),
+    "avif": ("AVIF", "image/avif"),
+    "jpeg": ("JPEG", "image/jpeg"),
+}
 
 
 class PosterCacheService:
@@ -159,6 +169,27 @@ class PosterCacheService:
         for cache_path in matching_files:
             if self.is_cache_valid(cache_path):
                 content_type = self._guess_content_type_from_extension(cache_path.suffix)
+                expected_extension = self._expected_extension()
+                if expected_extension and cache_path.suffix.lower() != expected_extension:
+                    # Lazy re-encode: cached file uses an outdated format. If anything
+                    # fails here, fall back to serving the current file without crashing.
+                    logger.debug(f"Cache format mismatch for movie {movie_id}: {cache_path}")
+                    try:
+                        encoded, encoded_type = self._encode_image(
+                            cache_path.read_bytes(), content_type
+                        )
+                        if (
+                            self._get_extension_from_content_type(encoded_type)
+                            != cache_path.suffix.lower()
+                        ):
+                            new_path = self._get_cache_path(movie_id, encoded_type)
+                            new_path.write_bytes(encoded)
+                            self._remove_other_versions(movie_id, keep=new_path)
+                            logger.debug(f"Re-encoded cache for movie {movie_id}: {new_path}")
+                            return new_path, encoded_type
+                    except OSError as e:
+                        logger.error(f"Failed to re-encode cache for movie {movie_id}: {e}")
+
                 logger.debug(f"Cache hit for movie {movie_id}: {cache_path}")
                 return cache_path, content_type
 
@@ -176,22 +207,92 @@ class PosterCacheService:
             Path to the saved cache file, or None if save failed
         """
         try:
-            cache_path = self._get_cache_path(movie_id, content_type)
+            encoded, encoded_type = self._encode_image(content, content_type)
+            cache_path = self._get_cache_path(movie_id, encoded_type)
 
-            # Remove any existing cached files for this movie
-            pattern = f"{movie_id}.*"
-            for old_file in self.cache_dir.glob(pattern):
-                old_file.unlink()
-                logger.debug(f"Removed old cache: {old_file}")
+            # Remove any existing cached files for this movie in other formats
+            self._remove_other_versions(movie_id, keep=cache_path)
 
             # Write new cache file
-            cache_path.write_bytes(content)
-            logger.debug(f"Saved poster to cache: {cache_path} ({len(content)} bytes)")
+            cache_path.write_bytes(encoded)
+            logger.debug(f"Saved poster to cache: {cache_path} ({len(encoded)} bytes)")
 
             return cache_path
         except OSError as e:
             logger.error(f"Failed to save poster to cache: {e}")
             return None
+
+    def _remove_other_versions(self, movie_id: int, keep: Path) -> None:
+        """Remove cached files for a movie that use a different format.
+
+        Args:
+            movie_id: The movie/TV show ID.
+            keep: The cache file to retain.
+        """
+        for old_file in self.cache_dir.glob(f"{movie_id}.*"):
+            if old_file == keep:
+                continue
+            try:
+                old_file.unlink()
+                logger.debug(f"Removed old cache: {old_file}")
+            except OSError as e:
+                logger.error(f"Failed to remove {old_file}: {e}")
+
+    def _expected_extension(self) -> str | None:
+        """Return the file extension for the configured target format.
+
+        Returns:
+            The extension including the dot (e.g., ".webp"), or None when the
+            original format is used.
+        """
+        target = settings.poster_encode_format
+        if target == "original":
+            return None
+        return self._get_extension_from_content_type(_ENCODE_FORMATS[target][1])
+
+    def _encode_image(self, content: bytes, content_type: str) -> tuple[bytes, str]:
+        """Re-encode image bytes to the configured format, quality and max width.
+
+        Args:
+            content: The original image bytes.
+            content_type: The original content type (e.g., "image/jpeg").
+
+        Returns:
+            A tuple of (encoded_bytes, content_type). Falls back to the original
+            bytes and content type when encoding is disabled or fails.
+        """
+        target = settings.poster_encode_format
+        if target == "original":
+            return content, content_type
+
+        try:
+            save_format, output_type = _ENCODE_FORMATS[target]
+            image = Image.open(io.BytesIO(content))
+            max_width = settings.poster_max_width
+            if max_width and image.width > max_width:
+                ratio = max_width / image.width
+                new_size = (max_width, max(1, round(image.height * ratio)))
+                encoded_image = image.resize(new_size, Image.Resampling.LANCZOS)
+            else:
+                encoded_image = image
+
+            output = io.BytesIO()
+            if target == "jpeg":
+                # JPEG does not support alpha; flatten to RGB first
+                to_save = (
+                    encoded_image.convert("RGB")
+                    if encoded_image.mode not in ("RGB", "L")
+                    else encoded_image
+                )
+            else:
+                to_save = encoded_image
+            to_save.save(output, format=save_format, quality=settings.poster_encode_quality)
+            return output.getvalue(), output_type
+        except Exception:
+            # Resilience requirement: a poster request must never fail because
+            # re-encoding failed, so fall back to the original bytes.
+            logger.exception("Failed to re-encode poster image, storing original")
+            return content, content_type
 
     def clear_cache(self) -> int:
         """Clear all cached posters.

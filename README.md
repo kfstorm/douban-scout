@@ -122,6 +122,9 @@ curl -H "X-API-Key: your-api-key" http://localhost:3000/api/import/status
 | -------- | ------ | ---- |
 | `DATA_DIR` | `data` | 存储所有持久化数据的根目录, 包括 SQLite 数据库文件和海报图片缓存 |
 | `POSTER_CACHE_TTL` | `365` | 本地海报图片的缓存有效期(天), 超过此天数后会尝试重新下载 |
+| `POSTER_ENCODE_FORMAT` | `avif` | 海报图片缓存时的重编码格式; original 表示原样缓存豆瓣返回的图片, jpeg/webp/avif 会在保存前进行缩放和重编码 |
+| `POSTER_ENCODE_QUALITY` | `40` | 海报图片重编码质量(1-100), 数值越低压缩率越高、画质损失越大; 仅当 POSTER_ENCODE_FORMAT 不为 original 时生效 |
+| `POSTER_MAX_WIDTH` | `400` | 海报图片缩放后的最大宽度(像素), 超过该宽度会按比例缩小, 0 表示不缩放; 仅当 POSTER_ENCODE_FORMAT 不为 original 时生效 |
 | `IMPORT_API_KEY` | *无* | 调用数据导入 API 时必须在请求头中提供的 X-API-Key 密钥; 若未设置, 导入接口将被禁用 |
 | `RATE_LIMIT_DEFAULT` | `100/minute` | 全局默认的接口访问速率限制, 适用于未单独配置限流的接口 |
 | `RATE_LIMIT_SEARCH` | `30/minute` | 搜索标题、获取电影或电视节目列表等主要查询接口的访问速率限制 |
