@@ -1,11 +1,14 @@
 """Tests for poster caching functionality."""
 
+import asyncio
 import os
 import time
 from unittest.mock import patch
 
 import pytest
+from fastapi import FastAPI
 
+from app.main import _poster_cache_cleanup_loop, lifespan
 from app.services.poster_service import PosterCacheService
 
 
@@ -104,6 +107,72 @@ class TestPosterCacheService:
         # Should return None for expired cache
         result = temp_cache_service.get_cached_poster(movie_id)
         assert result is None
+
+    def test_clear_expired_cache_removes_expired_files(
+        self, temp_cache_service: PosterCacheService
+    ) -> None:
+        """Test that expired cache files are removed."""
+        temp_cache_service.ttl_days = 1
+        expired_path = temp_cache_service.save_poster(12345, b"expired", "image/jpeg")
+        current_path = temp_cache_service.save_poster(12346, b"current", "image/jpeg")
+
+        assert expired_path is not None
+        assert current_path is not None
+        old_time = time.time() - (2 * 24 * 3600)
+        os.utime(expired_path, (old_time, old_time))
+        unrelated_path = temp_cache_service.cache_dir / "metadata.json"
+        unrelated_path.write_bytes(b"metadata")
+        os.utime(unrelated_path, (old_time, old_time))
+
+        removed_count = temp_cache_service.clear_expired_cache()
+
+        assert removed_count == 1
+        assert not expired_path.exists()
+        assert current_path.exists()
+        assert unrelated_path.exists()
+
+    def test_clear_expired_cache_keeps_unexpired_files(
+        self, temp_cache_service: PosterCacheService
+    ) -> None:
+        """Test that unexpired cache files are kept."""
+        cache_path = temp_cache_service.save_poster(12345, b"current", "image/jpeg")
+
+        assert cache_path is not None
+        assert temp_cache_service.clear_expired_cache() == 0
+        assert cache_path.exists()
+
+    @pytest.mark.asyncio
+    async def test_lifespan_cleans_expired_cache_on_startup(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that application startup triggers poster cache cleanup."""
+        cleanup = patch("app.main.poster_cache_service.clear_expired_cache", return_value=0)
+        monkeypatch.setattr("app.main.get_db_path", lambda: "/tmp/test.db")
+
+        with cleanup as cleanup_mock:
+            async with lifespan(FastAPI()):
+                pass
+
+        cleanup_mock.assert_called_once_with()
+
+    @pytest.mark.asyncio
+    async def test_periodic_cleanup_runs(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that the background task runs periodic poster cache cleanup."""
+        cleanup = patch("app.main.poster_cache_service.clear_expired_cache", return_value=0)
+        sleep_calls = 0
+
+        async def sleep(_: float) -> None:
+            nonlocal sleep_calls
+            sleep_calls += 1
+            if sleep_calls == 2:
+                raise asyncio.CancelledError
+
+        monkeypatch.setattr("app.main.asyncio.sleep", sleep)
+
+        with cleanup as cleanup_mock, pytest.raises(asyncio.CancelledError):
+            await _poster_cache_cleanup_loop()
+
+        assert cleanup_mock.call_count == 1
 
     def test_save_poster_replaces_existing(self, temp_cache_service):
         """Test that saving a poster replaces any existing cached file."""

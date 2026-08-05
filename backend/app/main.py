@@ -1,5 +1,7 @@
 """FastAPI application entry point."""
 
+import asyncio
+import contextlib
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -15,10 +17,22 @@ from app.limiter import limiter
 from app.logging_config import setup_logging
 from app.routers.data_import import router as import_router
 from app.routers.movies import router as movies_router
+from app.services.poster_service import poster_cache_service
 
 # Configure logging on module import
 setup_logging()
 logger = logging.getLogger("douban.main")
+POSTER_CACHE_CLEANUP_INTERVAL = 24 * 60 * 60
+
+
+async def _poster_cache_cleanup_loop() -> None:
+    """Periodically remove expired poster cache files."""
+    while True:
+        await asyncio.sleep(POSTER_CACHE_CLEANUP_INTERVAL)
+        try:
+            await asyncio.to_thread(poster_cache_service.clear_expired_cache)
+        except Exception:
+            logger.exception("Poster cache cleanup failed")
 
 
 @asynccontextmanager
@@ -35,9 +49,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     else:
         logger.info(f"Using database at {db_path}")
 
-    yield
-    # Shutdown
-    logger.info("Application shutting down...")
+    try:
+        await asyncio.to_thread(poster_cache_service.clear_expired_cache)
+    except Exception:
+        logger.exception("Initial poster cache cleanup failed")
+    cleanup_task = asyncio.create_task(_poster_cache_cleanup_loop())
+    try:
+        yield
+    finally:
+        cleanup_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await cleanup_task
+        logger.info("Application shutting down...")
 
 
 app = FastAPI(

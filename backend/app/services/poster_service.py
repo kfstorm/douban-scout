@@ -4,6 +4,7 @@ import logging
 import mimetypes
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import ClassVar
 
 from app.config import settings
 
@@ -14,6 +15,15 @@ class PosterCacheService:
     """Service for managing cached poster images."""
 
     CACHE_SUBDIR = "cache/posters"
+    IMAGE_EXTENSIONS: ClassVar[set[str]] = {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+        ".gif",
+        ".avif",
+        ".svg",
+    }
 
     def __init__(self, ttl_days: int | None = None) -> None:
         """Initialize the poster cache service.
@@ -199,6 +209,38 @@ class PosterCacheService:
                     logger.error(f"Failed to remove {cache_file}: {e}")
 
         logger.info(f"Cleared {count} cached posters")
+        return count
+
+    def clear_expired_cache(self) -> int:
+        """Remove cached posters whose age exceeds the configured TTL.
+
+        Returns:
+            Number of expired files removed
+        """
+        count = 0
+        expiration = timedelta(days=self.ttl_days)
+        now = datetime.now()
+
+        for cache_file in self.cache_dir.glob("*"):
+            if (
+                not cache_file.is_file()
+                or not cache_file.stem.isdigit()
+                or cache_file.suffix.lower() not in self.IMAGE_EXTENSIONS
+            ):
+                continue
+
+            try:
+                age = now - datetime.fromtimestamp(cache_file.stat().st_mtime)
+                if age <= expiration:
+                    continue
+
+                cache_file.unlink()
+                count += 1
+                logger.debug(f"Removed expired cache: {cache_file}")
+            except OSError as e:
+                logger.exception(f"Failed to remove expired cache {cache_file}: {e}")
+
+        logger.info(f"Cleared {count} expired cached posters")
         return count
 
 
