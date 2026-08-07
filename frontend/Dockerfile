@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-bookworm AS builder
+FROM node:24-trixie AS builder
 
 WORKDIR /app
 
