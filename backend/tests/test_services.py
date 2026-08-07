@@ -1,5 +1,6 @@
 """Service layer tests."""
 
+import sqlite3
 import time
 from unittest.mock import patch
 
@@ -264,7 +265,7 @@ class TestImportService:
         def side_effect_fail(*args, **kwargs):
             raise Exception("Simulated import failure")
 
-        with patch.object(ImportService, "_insert_batch", side_effect=side_effect_fail):
+        with patch.object(ImportService, "_merge_batch", side_effect=side_effect_fail):
             response = client.post(
                 "/api/import", json={"source_path": temp_source_db_path}, headers=headers
             )
@@ -355,6 +356,135 @@ class TestImportService:
         poster_urls = [p.url for p in movie.posters]
         assert "https://example.com/photo1.jpg" not in poster_urls
         assert "https://example.com/photo2.jpg" not in poster_urls
+
+    def _run_import(
+        self, client, source_path: str, headers: dict, force_full: bool = False
+    ) -> None:
+        """Trigger an import and wait for it to finish."""
+        client.post(
+            "/api/import",
+            json={"source_path": source_path, "force_full": force_full},
+            headers=headers,
+        )
+        for _ in range(50):
+            time.sleep(0.2)
+            status_response = client.get("/api/import/status", headers=headers)
+            status = status_response.json()
+            if status["status"] in ("completed", "failed"):
+                break
+        assert status["status"] == "completed", status.get("message")
+
+    def test_incremental_import_syncs_changes(self, client, db_session, tmp_path):
+        """Test that a second (incremental) import only applies changed rows.
+
+        Uses its own source file to avoid mutating the shared test source.
+        """
+        src_path = str(tmp_path / "source.db")
+        src = sqlite3.connect(src_path)
+        src.execute(
+            "CREATE TABLE item (douban_id TEXT PRIMARY KEY, imdb_id TEXT, "
+            "douban_title TEXT, year INTEGER, rating REAL, raw_data TEXT, "
+            "type TEXT, update_time REAL)"
+        )
+        src.execute(
+            "INSERT INTO item VALUES ('1001', 'tt1', 'Movie One', 2000, 7.5, "
+            '\'{"detail": {"card_subtitle": "2000 / 美国 / 剧情"}}\', '
+            "'movie', 1000.0)"
+        )
+        src.execute(
+            "INSERT INTO item VALUES ('1002', 'tt2', 'Movie Two', 2001, 6.5, "
+            '\'{"detail": {"card_subtitle": "2001 / 日本 / 喜剧"}}\', '
+            "'movie', 1000.0)"
+        )
+        src.execute(
+            "INSERT INTO item VALUES ('1003', 'tt3', 'Movie Three', 2002, 5.5, "
+            '\'{"detail": {"card_subtitle": "2002 / 中国香港 / 动作"}}\', '
+            "'movie', 1000.0)"
+        )
+        src.commit()
+
+        ImportService._instance = None
+        headers = {"X-API-Key": "test-api-key"}
+        self._run_import(client, src_path, headers)
+
+        db_session.close()
+        assert db_session.query(Movie).count() == 3
+
+        # Mutate the source database: update one row, add one, delete one.
+        cursor = src.cursor()
+        cursor.execute(
+            "UPDATE item SET douban_title='Updated Movie One', "
+            "update_time=9999999999.0, "
+            'raw_data=\'{"detail": {"card_subtitle": "2000 / 美国 / 战争"}}\' '
+            "WHERE douban_id='1001'"
+        )
+        cursor.execute(
+            "INSERT INTO item VALUES ('3001', 'tt4', 'Brand New Movie', 2020, 8.0, "
+            '\'{"detail": {"card_subtitle": "2020 / 中国大陆 / 犯罪"}}\', '
+            "'movie', 9999999998.0)"
+        )
+        cursor.execute("DELETE FROM item WHERE douban_id='1002'")
+        src.commit()
+
+        # Second, incremental import
+        ImportService._instance = None
+        self._run_import(client, src_path, headers)
+
+        db_session.close()
+        # 3 original, minus 1002 (deleted), plus 3001 (added) => 3
+        assert db_session.query(Movie).count() == 3
+
+        updated = db_session.query(Movie).filter(Movie.id == 1001).first()
+        assert updated is not None
+        assert updated.title == "Updated Movie One"
+        assert {g.genre_obj.name for g in updated.genres} == {"战争"}
+
+        added = db_session.query(Movie).filter(Movie.id == 3001).first()
+        assert added is not None
+        assert added.title == "Brand New Movie"
+        assert "中国大陆" in [r.region_obj.name for r in added.regions]
+
+        # Deleted (blacklisted) source row is removed from the target
+        assert db_session.query(Movie).filter(Movie.id == 1002).first() is None
+
+        # Unchanged rows are preserved untouched
+        unchanged = db_session.query(Movie).filter(Movie.id == 1003).first()
+        assert unchanged is not None
+        assert unchanged.title == "Movie Three"
+        assert unchanged.type == "movie"
+
+        src.close()
+
+    def test_incremental_import_no_changes(
+        self, client, populated_source_db, temp_source_db_path, db_session
+    ):
+        """Test that a second incremental import with no changes is a no-op."""
+        ImportService._instance = None
+        headers = {"X-API-Key": "test-api-key"}
+        self._run_import(client, temp_source_db_path, headers)
+        self._run_import(client, temp_source_db_path, headers)
+
+        db_session.close()
+        assert db_session.query(Movie).count() == 13
+
+    def test_force_full_import(self, client, populated_source_db, temp_source_db_path, db_session):
+        """Test that force_full rebuilds the target from scratch."""
+        ImportService._instance = None
+        headers = {"X-API-Key": "test-api-key"}
+        self._run_import(client, temp_source_db_path, headers)
+
+        # Inject an extra row that is not in the source
+        db_session.close()
+        db_session.add(Movie(id=9999, title="Zombie Data", year=1999, type="movie"))
+        db_session.commit()
+
+        # A force_full rebuild removes it (target mirrors source exactly)
+        ImportService._instance = None
+        self._run_import(client, temp_source_db_path, headers, force_full=True)
+
+        db_session.close()
+        assert db_session.query(Movie).filter(Movie.id == 9999).first() is None
+        assert db_session.query(Movie).count() == 13
 
 
 class TestMovieService:

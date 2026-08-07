@@ -20,6 +20,7 @@ class ImportRequest(BaseModel):
     """Import request schema."""
 
     source_path: str
+    force_full: bool = False
 
 
 @router.post("", response_model=ImportStatus)
@@ -37,7 +38,9 @@ def start_import(
         )
 
     try:
-        return import_service.start_import(import_request.source_path)
+        return import_service.start_import(
+            import_request.source_path, force_full=import_request.force_full
+        )
     except RuntimeError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
 
