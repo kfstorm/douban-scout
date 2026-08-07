@@ -81,8 +81,11 @@ def temp_source_db_path(temp_import_dir: str) -> str:
 def source_db_connection(temp_source_db_path: str) -> Generator[sqlite3.Connection, None, None]:
     """Create and populate a source SQLite database for import testing."""
     conn = sqlite3.connect(temp_source_db_path)
+    # Recreate the table from scratch so each test starts from a pristine source,
+    # regardless of mutations made by earlier tests in the same session.
+    conn.execute("DROP TABLE IF EXISTS item")
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS item (
+        CREATE TABLE item (
             douban_id TEXT PRIMARY KEY,
             imdb_id TEXT,
             douban_title TEXT,
