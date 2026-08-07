@@ -545,7 +545,7 @@ class ImportService:
                 movie = Movie(**movie_data)
                 db.add(movie)
                 db.flush()
-                self._add_associations(db, int(movie.id), genre_ids, region_ids, posters)
+                self._add_associations(db, movie_data["id"], genre_ids, region_ids, posters)
 
             db.flush()
             db.expunge_all()
