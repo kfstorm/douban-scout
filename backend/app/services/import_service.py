@@ -481,11 +481,16 @@ class ImportService:
                 processed += len(batch)
 
             db.commit()
-            db.execute(text("DROP TABLE tmp_change"))
             with self._lock:
                 self._status.processed = processed
                 self._status.total = total
                 self._status.percentage = 100.0
+
+        # Drop the temp delta table outside the Session. A Session rolls its
+        # pending transaction back on close, so the DROP must be committed on a
+        # plain connection to guarantee it is not left into the swapped file.
+        with temp_engine.connect() as conn:
+            conn.execute(text("DROP TABLE tmp_change"))
 
         # Release the temp file so the standalone VACUUM connection can lock it
         temp_engine.dispose()
