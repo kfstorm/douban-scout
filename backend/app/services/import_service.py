@@ -7,6 +7,7 @@ import re
 import shutil
 import sqlite3
 import threading
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 from typing import ClassVar
@@ -58,7 +59,6 @@ class ImportService:
     _SORTED_GENRES: ClassVar[list[str]] = sorted(VALID_GENRES, key=len, reverse=True)
 
     _BATCH_SIZE = 1000
-    _MAX_ERROR_LOGS = 10
 
     def __new__(cls) -> "ImportService":
         """Create singleton instance."""
@@ -278,6 +278,10 @@ class ImportService:
                 logger.info("Running incremental import")
                 self._import_incremental(source_path, source_conn, temp_db_path)
 
+            # The source connection is no longer needed once the merge/full import is done
+            source_conn.close()
+            source_conn = None
+
             # Post-import optimization
             self._optimize_db(temp_db_path)
 
@@ -324,6 +328,12 @@ class ImportService:
         self, source_path: str, source_conn: sqlite3.Connection, temp_db_path: Path
     ) -> None:
         """Full rebuild: fresh empty temp DB, import every source row."""
+        total = source_conn.execute(
+            "SELECT COUNT(*) FROM item WHERE type IN ('movie', 'tv')"
+        ).fetchone()[0]
+        logger.info(f"Found {total} total records to import")
+        with self._lock:
+            self._status.total = total
         source_cursor = source_conn.cursor()
         source_cursor.execute(f"{_SOURCE_ROW_SQL} WHERE type IN ('movie', 'tv')")
 
@@ -345,7 +355,7 @@ class ImportService:
                         self._insert_batch(db, batch)
                         processed += len(batch)
                         batch = []
-                        self._update_progress(processed, processed)
+                        self._update_progress(processed, total)
                 except Exception as e:
                     error_count += 1
                     logger.error(f"Error processing row {douban_id}: {e}", exc_info=True)
@@ -397,15 +407,18 @@ class ImportService:
                     "FROM src.item WHERE type IN ('movie', 'tv')"
                 )
             )
-            changed_rows = conn.execute(
+            # Materialize the delta ids into a regular table (survives the
+            # transaction) so they can be streamed in bounded memory instead of
+            # holding the whole changed-id list in Python.
+            conn.execute(
                 text(
+                    "CREATE TABLE tmp_change AS "
                     "SELECT t.id FROM tmp_src t "
                     "LEFT JOIN movies m ON m.id = t.id "
                     "WHERE m.id IS NULL OR m.type <> t.typ "
                     "OR NOT (m.updated_at IS t.upd)"
                 )
-            ).fetchall()
-            change_ids = [int(r[0]) for r in changed_rows]
+            )
 
             # Delete rows that no longer exist in the source (mirror source DB).
             # Children are removed explicitly so we do not depend on the
@@ -417,15 +430,20 @@ class ImportService:
             conn.execute(text("DELETE FROM movies WHERE id NOT IN (SELECT id FROM tmp_src)"))
             conn.execute(text("DETACH DATABASE src"))
 
-        with self._lock:
-            self._status.total = len(change_ids)
+        with temp_engine.connect() as conn:
+            total = conn.execute(text("SELECT COUNT(*) FROM tmp_change")).scalar_one()
 
-        if not change_ids:
+        with self._lock:
+            self._status.total = total
+
+        if total == 0:
             logger.info("No changed records to import, nothing to update")
             with self._lock:
                 self._status.processed = 0
                 self._status.percentage = 100.0
             # Release the temp file before the standalone VACUUM connection opens
+            with temp_engine.connect() as conn:
+                conn.execute(text("DROP TABLE tmp_change"))
             temp_engine.dispose()
             return
 
@@ -436,7 +454,7 @@ class ImportService:
             batch: list[dict] = []
             error_count = 0
             processed = 0
-            for douban_id in change_ids:
+            for douban_id in self._iter_change_ids(temp_engine):
                 row = source_conn.execute(
                     f"{_SOURCE_ROW_SQL} WHERE douban_id = ?", (str(douban_id),)
                 ).fetchone()
@@ -448,7 +466,7 @@ class ImportService:
                         self._merge_batch(db, batch)
                         processed += len(batch)
                         batch = []
-                        self._update_progress(processed, len(change_ids))
+                        self._update_progress(processed, total)
                 except Exception as e:
                     error_count += 1
                     logger.error(f"Error processing row {douban_id}: {e}", exc_info=True)
@@ -463,14 +481,23 @@ class ImportService:
                 processed += len(batch)
 
             db.commit()
+            db.execute(text("DROP TABLE tmp_change"))
             with self._lock:
                 self._status.processed = processed
-                self._status.total = len(change_ids)
+                self._status.total = total
                 self._status.percentage = 100.0
 
         # Release the temp file so the standalone VACUUM connection can lock it
         temp_engine.dispose()
         logger.info(f"Incremental import merged {processed} records with {error_count} errors")
+
+    @staticmethod
+    def _iter_change_ids(temp_engine: Engine) -> Iterator[int]:
+        """Stream the changed movie ids from tmp_change one at a time."""
+        with temp_engine.connect() as conn:
+            cursor = conn.execute(text("SELECT id FROM tmp_change ORDER BY id"))
+            for (row_id,) in cursor:
+                yield int(row_id)
 
     def _open_temp_engine(self, temp_db_path: Path, fresh: bool) -> Engine:
         """Create a writable engine on the temp DB with import-friendly pragmas."""
