@@ -1,5 +1,7 @@
 """API endpoint tests."""
 
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -28,6 +30,20 @@ class TestMoviesEndpoint:
         assert data["items"] == []
         assert data["next_cursor"] is None
         assert data["total"] == 0
+
+    def test_unhandled_exception_returns_safe_500_response(
+        self, client: TestClient, sample_movies: list
+    ):
+        """Test unexpected errors do not expose exception details in the response."""
+        with patch(
+            "app.routers.movies.poster_cache_service.get_cached_poster",
+            side_effect=RuntimeError("secret implementation detail"),
+        ):
+            response = client.get("/api/movies/2001/poster")
+
+        assert response.status_code == 500
+        assert response.json() == {"detail": "Internal Server Error"}
+        assert "secret implementation detail" not in response.text
 
     def test_get_movies_with_data(self, client: TestClient, sample_movies: list):
         """Test getting movies with sample data."""

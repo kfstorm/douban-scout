@@ -72,6 +72,17 @@ app = FastAPI(
 app.state.limiter = limiter
 
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> Response:
+    """Log unexpected exceptions and return a safe generic error response."""
+    logger.exception("Unhandled exception while handling %s %s", request.method, request.url.path)
+    return Response(
+        content='{"detail":"Internal Server Error"}',
+        status_code=500,
+        media_type="application/json",
+    )
+
+
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
     """Handle rate limit exceeded errors."""

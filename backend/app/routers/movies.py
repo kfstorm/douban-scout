@@ -230,5 +230,3 @@ async def get_poster(
         )
     except httpx.HTTPError as e:
         raise HTTPException(status_code=502, detail=f"Failed to fetch poster: {e}") from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal error: {e}") from e
