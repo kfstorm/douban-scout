@@ -8,4 +8,5 @@ from app.config import settings
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=[settings.rate_limit_default],
+    key_style="endpoint",
 )
