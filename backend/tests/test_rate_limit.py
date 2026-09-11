@@ -13,9 +13,11 @@ class TestRateLimiting:
     @pytest.fixture(autouse=True)
     def enable_limiter(self):
         """Enable limiter for this test class."""
+        limiter.reset()
         was_enabled = limiter.enabled
         limiter.enabled = True
         yield
+        limiter.reset()
         limiter.enabled = was_enabled
 
     def test_rate_limit_movies(self, client: TestClient):
@@ -32,6 +34,13 @@ class TestRateLimiting:
         response = client.get("/api/movies")
         assert response.status_code == 429
         assert "Rate limit exceeded" in response.text
+
+    def test_rate_limit_posters_groups_movie_id_variants(self, client: TestClient):
+        """Test that movie IDs share the poster endpoint limit."""
+        responses = [client.get(f"/api/movies/{10_000_000 + index}/poster") for index in range(201)]
+
+        assert [response.status_code for response in responses[:200]] == [404] * 200
+        assert responses[200].status_code == 429
 
     def test_rate_limit_config_loading(self, monkeypatch):
         """Test that rate limits are loaded from environment variables."""
