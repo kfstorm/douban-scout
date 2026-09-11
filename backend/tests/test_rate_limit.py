@@ -3,7 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.config import Settings
+from app.config import Settings, settings
 from app.limiter import limiter
 
 
@@ -37,10 +37,13 @@ class TestRateLimiting:
 
     def test_rate_limit_posters_groups_movie_id_variants(self, client: TestClient):
         """Test that movie IDs share the poster endpoint limit."""
-        responses = [client.get(f"/api/movies/{10_000_000 + index}/poster") for index in range(201)]
+        limit = int(settings.rate_limit_poster.split(";", 1)[0].split("/", 1)[0])
+        responses = [
+            client.get(f"/api/movies/{10_000_000 + index}/poster") for index in range(limit + 1)
+        ]
 
-        assert [response.status_code for response in responses[:200]] == [404] * 200
-        assert responses[200].status_code == 429
+        assert [response.status_code for response in responses[:limit]] == [404] * limit
+        assert responses[limit].status_code == 429
 
     def test_rate_limit_config_loading(self, monkeypatch):
         """Test that rate limits are loaded from environment variables."""
