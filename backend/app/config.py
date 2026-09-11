@@ -59,7 +59,7 @@ class Settings(BaseSettings):
         description="全局默认的接口访问速率限制, 适用于未单独配置限流的接口",
     )
     rate_limit_search: str = Field(
-        default="10/minute;100/15minutes;300/hour",
+        default="5/minute;30/15minutes;100/hour",
         description="搜索标题、获取电影或电视节目列表等主要查询接口的访问速率限制",
     )
     rate_limit_genres: str = Field(
@@ -73,7 +73,7 @@ class Settings(BaseSettings):
         description="获取数据统计信息(如作品总数、年份分布等)接口的访问速率限制",
     )
     rate_limit_poster: str = Field(
-        default="120/minute;1000/15minutes;3000/hour",
+        default="60/minute;300/15minutes;1000/hour",
         description="海报图片代理服务接口的访问速率限制",
     )
     rate_limit_import: str = Field(

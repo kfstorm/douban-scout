@@ -127,11 +127,11 @@ curl -H "X-API-Key: your-api-key" http://localhost:3000/api/import/status
 | `POSTER_MAX_WIDTH` | `400` | 海报图片缩放后的最大宽度(像素), 超过该宽度会按比例缩小, 0 表示不缩放; 仅当 POSTER_ENCODE_FORMAT 不为 original 时生效 |
 | `IMPORT_API_KEY` | *无* | 调用数据导入 API 时必须在请求头中提供的 X-API-Key 密钥; 若未设置, 导入接口将被禁用 |
 | `RATE_LIMIT_DEFAULT` | `100/minute` | 全局默认的接口访问速率限制, 适用于未单独配置限流的接口 |
-| `RATE_LIMIT_SEARCH` | `10/minute;100/15minutes;300/hour` | 搜索标题、获取电影或电视节目列表等主要查询接口的访问速率限制 |
+| `RATE_LIMIT_SEARCH` | `5/minute;30/15minutes;100/hour` | 搜索标题、获取电影或电视节目列表等主要查询接口的访问速率限制 |
 | `RATE_LIMIT_GENRES` | `20/minute` | 获取影视类型标签列表接口的访问速率限制 |
 | `RATE_LIMIT_REGIONS` | `20/minute` | 获取影视地区标签列表接口的访问速率限制 |
 | `RATE_LIMIT_STATS` | `10/minute` | 获取数据统计信息(如作品总数、年份分布等)接口的访问速率限制 |
-| `RATE_LIMIT_POSTER` | `120/minute;1000/15minutes;3000/hour` | 海报图片代理服务接口的访问速率限制 |
+| `RATE_LIMIT_POSTER` | `60/minute;300/15minutes;1000/hour` | 海报图片代理服务接口的访问速率限制 |
 | `RATE_LIMIT_IMPORT` | `5/minute` | 触发数据导入任务以及查询导入进度接口的访问速率限制 |
 
 <!-- ENV_VARS_END -->
@@ -142,7 +142,7 @@ curl -H "X-API-Key: your-api-key" http://localhost:3000/api/import/status
 任意一个窗口超限都会返回 `429 Too Many Requests`。示例：
 
 - `10/minute` (每分钟 10 次)
-- `10/minute;100/15minutes;300/hour` (同时限制每分钟、每 15 分钟和每小时的请求数)
+- `5/minute;30/15minutes;100/hour` (同时限制每分钟、每 15 分钟和每小时的请求数)
 - `500/hour` (每小时 500 次)
 - `1/second` (每秒 1 次)
 
