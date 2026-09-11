@@ -20,10 +20,10 @@ class TestRateLimiting:
 
     def test_rate_limit_movies(self, client: TestClient):
         """Test rate limiting on movies endpoint."""
-        # The limit is 30/minute by default. We make 31 requests.
+        # The shortest limit is 10/minute by default. We make 11 requests.
         # Note: In tests, the limit might be shared if not isolated.
         # But here each test starts fresh.
-        limit = 30
+        limit = 10
 
         for _ in range(limit):
             response = client.get("/api/movies")

@@ -127,24 +127,47 @@ curl -H "X-API-Key: your-api-key" http://localhost:3000/api/import/status
 | `POSTER_MAX_WIDTH` | `400` | 海报图片缩放后的最大宽度(像素), 超过该宽度会按比例缩小, 0 表示不缩放; 仅当 POSTER_ENCODE_FORMAT 不为 original 时生效 |
 | `IMPORT_API_KEY` | *无* | 调用数据导入 API 时必须在请求头中提供的 X-API-Key 密钥; 若未设置, 导入接口将被禁用 |
 | `RATE_LIMIT_DEFAULT` | `100/minute` | 全局默认的接口访问速率限制, 适用于未单独配置限流的接口 |
-| `RATE_LIMIT_SEARCH` | `30/minute` | 搜索标题、获取电影或电视节目列表等主要查询接口的访问速率限制 |
+| `RATE_LIMIT_SEARCH` | `10/minute;100/15minutes;300/hour` | 搜索标题、获取电影或电视节目列表等主要查询接口的访问速率限制 |
 | `RATE_LIMIT_GENRES` | `20/minute` | 获取影视类型标签列表接口的访问速率限制 |
 | `RATE_LIMIT_REGIONS` | `20/minute` | 获取影视地区标签列表接口的访问速率限制 |
 | `RATE_LIMIT_STATS` | `10/minute` | 获取数据统计信息(如作品总数、年份分布等)接口的访问速率限制 |
-| `RATE_LIMIT_POSTER` | `200/minute` | 海报图片代理服务接口的访问速率限制 |
+| `RATE_LIMIT_POSTER` | `120/minute;1000/15minutes;3000/hour` | 海报图片代理服务接口的访问速率限制 |
 | `RATE_LIMIT_IMPORT` | `5/minute` | 触发数据导入任务以及查询导入进度接口的访问速率限制 |
 
 <!-- ENV_VARS_END -->
 
 ### 限流格式
 
-限流字符串遵循 `[次数]/[时间周期]` 格式。示例：
+限流字符串遵循 `[次数]/[时间周期]` 格式，多个限流窗口使用分号分隔。
+任意一个窗口超限都会返回 `429 Too Many Requests`。示例：
 
 - `10/minute` (每分钟 10 次)
+- `10/minute;100/15minutes;300/hour` (同时限制每分钟、每 15 分钟和每小时的请求数)
 - `500/hour` (每小时 500 次)
 - `1/second` (每秒 1 次)
 
-支持的时间周期：`second`, `minute`, `hour`, `day`, `month`, `year`。
+支持的时间周期：`second`, `minute`, `hour`, `day`, `month`, `year`，也支持在周期前指定倍数，
+例如 `15minutes`。
+
+### 反向代理部署
+
+如果 Backend 直接接收客户端请求，无需额外配置。部署在 Nginx、Caddy 或其他反向代理之后时，
+反向代理应转发标准的 `X-Forwarded-For` header，Backend 使用 Uvicorn 的 proxy header 支持
+识别来源地址。
+
+Uvicorn 默认只信任本机代理。非 Docker Compose 部署时，应将 `FORWARDED_ALLOW_IPS` 设置为
+直接连接 Backend 的代理 IP 或网段：
+
+```bash
+FORWARDED_ALLOW_IPS=127.0.0.1 uv run uvicorn app.main:app \
+  --host 0.0.0.0 --port 8000 --proxy-headers
+```
+
+如果 Backend 没有直接暴露到公网，也可以使用 `FORWARDED_ALLOW_IPS=*`。不设置该变量时，
+服务仍然可以运行，但限流会按反向代理地址计算，多个客户端可能共享同一个限流额度。
+
+Docker Compose 示例已经配置了 `FORWARDED_ALLOW_IPS=*`，因为其中 Backend 没有发布宿主机端口，
+只能通过 Frontend 访问。
 
 ## 许可
 

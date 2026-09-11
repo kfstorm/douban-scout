@@ -30,6 +30,8 @@ services:
       DATA_DIR: /data
       # IMPORTANT: Change this to a secure random key for production
       IMPORT_API_KEY: change-me-in-production
+      # The backend is only reachable through the frontend proxy.
+      FORWARDED_ALLOW_IPS: "*"
 
   frontend:
     build:
